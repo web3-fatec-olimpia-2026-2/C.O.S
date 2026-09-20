@@ -23,8 +23,8 @@
 | Douglas Pereira | Product Owner | [@Douglas-LP](https://github.com/Douglas-LP) |
 | Douglas Pereira | Scrum Master | [@Douglas-LP](https://github.com/Douglas-LP) |
 | Claudinei Feliz | Dev Front-end | [@Claudineifeliz](https://github.com/Claudineifeliz) |
-| Gleice Constâncio Rodrigues | Dev Back-end | [@geconstancio] (https://github.com/geconstancio) |
-| Isabelly Ribeiro | QA | [@isabelly-ribeiro1] (https://github.com/isabelly-ribeiro1) |
+| Gleice Constâncio Rodrigues | Dev Back-end | [@geconstancio](https://github.com/geconstancio) |
+| Isabelly Ribeiro | QA | [@isabelly-ribeiro1](https://github.com/isabelly-ribeiro1) |
 
 ---
 

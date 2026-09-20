@@ -1,4 +1,4 @@
-# Sistema Web de Gestão de Ordens de Serviço (C.O.S.)
+# Sistema Web de Controle de Ordens de Serviço (C.O.S.)
 
 > Projeto desenvolvido pelo **Grupo #C.O.S** na disciplina de Desenvolvimento Web III  
 > **FATEC Olímpia** — CST em Desenvolvimento de Software Multiplataforma — 2026/2  

@@ -20,11 +20,11 @@
 
 | Nome | Papel principal | GitHub |
 |---|---|---|
-| Douglas Pereira | Product Owner | [@usuario](https://github.com/usuario) |
-| Douglas Pereira | Scrum Master | [@usuario](https://github.com/usuario) |
-| Claudinei Feliz | Dev Front-end | [@usuario](https://github.com/usuario) |
-| Gleice Constâncio Rodrigues | Dev Back-end | @geconstancio (https://github.com/geconstancio) |
-| Isabelly Ribeiro | QA | @isabelly-ribeiro1 (https://github.com/isabelly-ribeiro1) |
+| Douglas Pereira | Product Owner | [@Douglas-LP](https://github.com/Douglas-LP) |
+| Douglas Pereira | Scrum Master | [@Douglas-LP](https://github.com/Douglas-LP) |
+| Claudinei Feliz | Dev Front-end | [@Claudineifeliz](https://github.com/Claudineifeliz) |
+| Gleice Constâncio Rodrigues | Dev Back-end | [@geconstancio] (https://github.com/geconstancio) |
+| Isabelly Ribeiro | QA | [@isabelly-ribeiro1] (https://github.com/isabelly-ribeiro1) |
 
 ---
 

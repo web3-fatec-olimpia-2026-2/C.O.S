@@ -1,40 +1,41 @@
-# [Nome do Projeto]
+# Sistema Web de Gestão de Ordens de Serviço (C.O.S.)
 
-> Projeto desenvolvido pelo **Grupo XX** na disciplina de Desenvolvimento Web III  
+> Projeto desenvolvido pelo **Grupo #C.O.S** na disciplina de Desenvolvimento Web III  
 > **FATEC Olímpia** — CST em Desenvolvimento de Software Multiplataforma — 2026/2  
-> Professor: [Nome do Professor]
+> Professor: José Ceron Neto
 
 ---
 
 ## Sobre o Projeto
 
-**Problema que resolve:** [Descreva em 1-2 parágrafos qual é o problema que seu projeto ataca]
+**Problema que resolve:** O sistema digitaliza o processo de abertura e acompanhamento de Ordens de Serviço, eliminando a dependência de controles manuais. Resolve a necessidade de comprovação do trabalho realizado ao exigir o envio de provas fotográficas do estado do local "antes" e "depois" da execução. Além disso, centraliza a informação de forma segura para permitir rastreabilidade total e futuras auditorias às operações.
 
-**Público-alvo:** [Quem vai usar isso?]
+**Público-alvo:** Administradores (controle operacional), Prestadores de Serviço (executantes no terreno), Utilizadores Comuns (consulta) e Utilizadores Premium (consulta avançada e recolha de indicadores).
 
-**Organização parceira:** [Nome da organização real com quem vocês fizeram contato]
+**Organização parceira:** Secretaria de Trânsito da Prefeitura de Olímpia
 
 ---
 
-## Equipe
+## Equipa
 
 | Nome | Papel principal | GitHub |
 |---|---|---|
-| [Nome Completo] | Product Owner | [@usuario](https://github.com/usuario) |
-| [Nome Completo] | Scrum Master | [@usuario](https://github.com/usuario) |
-| [Nome Completo] | Dev Full-stack | [@usuario](https://github.com/usuario) |
-| [Nome Completo] | Dev Back-end | [@usuario](https://github.com/usuario) |
-| [Nome Completo] | Dev Front-end | [@usuario](https://github.com/usuario) |
+| Douglas Pereira | Product Owner | [@usuario](https://github.com/usuario) |
+| Douglas Pereira | Scrum Master | [@usuario](https://github.com/usuario) |
+| Claudinei Feliz | Dev Front-end | [@usuario](https://github.com/usuario) |
+| Gleice Constâncio Rodrigues | Dev Back-end | @geconstancio (https://github.com/geconstancio) |
+| Isabelly Ribeiro | QA | @isabelly-ribeiro1 (https://github.com/isabelly-ribeiro1) |
 
 ---
 
 ## Tecnologias
 
-- **Back-end:** Django 5.x + Django REST Framework
-- **Front-end:** HTMX + Alpine.js (base) + React (etapa final)
-- **Banco de Dados:** SQLite (dev) / PostgreSQL (prod) + MongoDB Atlas
-- **Testes:** pytest + pytest-django
-- **CI/CD:** GitHub Actions
+- **Back-end:** Python e Django 5.x (Autenticação, ORM e Grupos/Permissões) + Django REST Framework.
+- **Front-end:** HTML, CSS, JavaScript (Interface responsiva para *smartphones*, *tablets* e computadores) + HTMX + Alpine.js.
+- **Base de Dados:** SQLite (ambiente de desenvolvimento) e PostgreSQL (ambiente de produção).
+- **Gestão de Ficheiros:** Biblioteca Pillow (processamento do registo fotográfico).
+- **Testes:** pytest + pytest-django.
+- **CI/CD:** GitHub Actions.
 - **Deploy:** [Railway / Render / Fly.io]
 
 ---
@@ -49,25 +50,25 @@
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/web3-fatec-olimpia-2026-2/grupo-XX-nome-projeto.git
-cd grupo-XX-nome-projeto
+git clone https://github.com/geconstancio/C.O.S.git
+cd grupo-XX-gestao-os
 
 # 2. Crie e ative o ambiente virtual
 python -m venv venv
 source venv/bin/activate  # Linux/WSL/Mac
 # venv\Scripts\activate    # Windows
 
-# 3. Instale as dependências
+# 3. Instale as dependências (incluindo Django e Pillow)
 pip install -r requirements.txt
 
 # 4. Configure as variáveis de ambiente
 cp .env.example .env
-# Edite o .env com seus valores locais
+# Edite o .env com os seus valores locais
 
-# 5. Aplique as migrations
+# 5. Aplique as migrations da base de dados SQLite
 python manage.py migrate
 
-# 6. Crie um superusuário para o admin
+# 6. Crie um superusuário para o admin (Perfil: Administrador)
 python manage.py createsuperuser
 
 # 7. Rode o servidor de desenvolvimento
@@ -106,10 +107,10 @@ pytest --cov=. --cov-report=html
 
 | Sprint | Período | Objetivo | Status |
 |---|---|---|---|
-| Sprint 1 | 17/08 - 14/09 | Django MTV + CRUD SQLite | [ver Taiga](link) |
-| Sprint 2 | 15/09 - 10/10 | NoSQL + Frontend Interativo | [ver Taiga](link) |
-| Sprint 3 | 11/10 - 22/11 | APIs + Testes + Arquitetura | [ver Taiga](link) |
-| Sprint 4 | 23/11 - 13/12 | Deploy + Polimento + Feira | [ver Taiga](link) |
+| Sprint 1 | 17/08 - 14/09 | Configuração base, Utilizadores, Perfis e Permissões. | [ver Taiga](link) |
+| Sprint 2 | 15/09 - 10/10 | Fluxo de O.S. e Área do Prestador (Envio de Fotografias). | [ver Taiga](link) |
+| Sprint 3 | 11/10 - 22/11 | Conferência Administrativa, Histórico Imutável e Auditoria. | [ver Taiga](link) |
+| Sprint 4 | 23/11 - 13/12 | Dashboards, Indicadores e Deploy Final. | [ver Taiga](link) |
 
 ---
 
@@ -129,6 +130,6 @@ MIT License — veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ## Agradecimentos
 
-- Professor responsável pela disciplina
-- Organização parceira que colaborou como stakeholder
+- José Ceron Neto
+- Secretaria de Trânsito da Prefeitura de Olímpia
 - Colegas de outros grupos que fizeram code review

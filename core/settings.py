@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Define a raiz do projeto para localizar arquivos e pastas do Django.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -20,16 +20,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# Chave secreta do projeto; em produção, deve ficar fora do código-fonte.
 SECRET_KEY = 'django-insecure-=tu1s&5)l(9eb23(37(-z5wg_$&jmk$uc^=0mf-*-sq_r3m)hu'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# Ativa modo de depuração para facilitar desenvolvimento local.
 DEBUG = True
 
+# Lista de hosts permitidos para acesso ao projeto.
 ALLOWED_HOSTS = []
 
 
 # Application definition
 
+# Registra os apps do Django e os módulos do projeto que serão usados.
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,6 +44,7 @@ INSTALLED_APPS = [
     'ordens',
 ]
 
+# Middlewares que interceptam e processam requisições antes das views.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,6 +78,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Configuração do banco de dados local do projeto.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -115,11 +120,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# Importa o módulo os para manipular caminhos de arquivos e pastas.
 import os
 
+# Configuração de arquivos estáticos (CSS, JS, imagens).
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Configuração de arquivos de mídia enviados pelo usuário.
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -128,8 +136,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Define o modelo de usuário customizado usado no projeto.
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
-LOGIN_REDIRECT_URL = '/'  # Rota para o Dashboard Inicial
-LOGOUT_REDIRECT_URL = '/login/'
-LOGIN_URL = '/login/'
+# URLs de autenticação e redirecionamento após login/logout.
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'pagina_inicial'
+LOGOUT_REDIRECT_URL = 'login'

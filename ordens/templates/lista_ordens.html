@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ordem de Serviço</title>
+</head>
+<body>
+    <h1>Ordens de Serviço cadastradas</h1>
+    <ul>
+        {% for r in lista_ordens %}
+            <li>#OS: {{ r.numero_OS }} - {{ r.data }} - Descrição do Serviço: {{ r.descricao }}</li>
+        {% empty %}
+            <li>Nenhuma Ordem de Serviço cadastra ainda.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

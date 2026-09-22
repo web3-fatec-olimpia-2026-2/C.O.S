@@ -26,7 +26,7 @@ django-environ>=0.11
 # ---------- Banco de dados ----------
 # SQLite vem embutido no Python (dev)
 # PostgreSQL para produção (Railway/Render):
-psycopg2-binary>=2.9
+psycopg2-binary>=2.9.13
 
 # ---------- MongoDB (a partir da Aula 7) ----------
 pymongo>=4.6

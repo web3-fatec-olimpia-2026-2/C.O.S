@@ -108,3 +108,7 @@ dmypy.json
 ehthumbs.db
 Thumbs.db
 desktop.ini
+
+# ---------- Metadados do Windows/Dropbox ----------
+*:Zone.Identifier
+com.dropbox.attrs

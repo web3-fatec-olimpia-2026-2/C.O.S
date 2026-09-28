@@ -10,7 +10,7 @@ def criar_ordem(request):
     form = OrdemForm(request.POST or None)
     if form.is_valid():
         form.save()
-        return redirect("lista_ordens")
+        return redirect('ordens:listar')
     return render(request, "ordens/nova.html", {"form": form})
 
 def editar_ordem(request, pk):
@@ -18,12 +18,12 @@ def editar_ordem(request, pk):
     form = OrdemForm(request.POST or None, instance=ordem)
     if form.is_valid():
         form.save()
-        return redirect("lista_ordens")
+        return redirect('ordens:listar')
     return render(request, "ordens/nova.html", {"form": form})
 
 def excluir_ordem(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
     if request.method == "POST":
         ordem.delete()
-        return redirect("lista_ordens")
+        return redirect('ordens:listar')
     return render(request, "ordens/confirmar_excluir.html", {"ordem": ordem})

@@ -7,8 +7,8 @@
 <body>
     <h1>Ordens de Serviço cadastradas</h1>
     <ul>
-        {% for r in lista_ordens %}
-            <li>#OS: {{ r.numero_OS }} - {{ r.data }} - Descrição do Serviço: {{ r.descricao }}</li>
+        {% for ordem in ordens %}
+            <li>#OS: {{ ordem.numero_OS }} - {{ ordem.data }} - Descrição do Serviço: {{ ordem.descricao }}</li>
         {% empty %}
             <li>Nenhuma Ordem de Serviço cadastra ainda.</li>
         {% endfor %}

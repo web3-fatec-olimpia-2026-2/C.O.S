@@ -1,0 +1,93 @@
+# =====================================================================
+# CI - INTEGRAÇÃO CONTÍNUA
+# =====================================================================
+# Web III - FATEC Olímpia - 2026/2
+#
+# Este workflow roda AUTOMATICAMENTE:
+#   - A cada push para qualquer branch
+#   - A cada Pull Request para main
+#
+# O que ele faz:
+#   1. Instala Python 3.11 e as dependências do projeto
+#   2. Roda os testes (pytest)
+#   3. Mede cobertura de código
+#   4. Roda linting básico
+#
+# Se algum passo falhar, o Pull Request fica com "X vermelho"
+# e não pode ser mergeado antes de corrigir. Isso educa o time.
+# =====================================================================
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+# Cancela execuções antigas se novo commit chegar (economiza minutos)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test:
+    name: Testes e cobertura
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-django pytest-cov ruff
+
+      - name: Rodar linter (Ruff)
+        run: ruff check . --output-format=github
+        continue-on-error: true  # Não bloqueia PR, só avisa
+
+      - name: Rodar testes com cobertura
+        env:
+          SECRET_KEY: "chave-de-teste-nao-usar-em-producao"
+          DEBUG: "False"
+          DATABASE_URL: "sqlite:///:memory:"
+        run: |
+          pytest --cov=. --cov-report=term-missing --cov-report=xml
+
+      - name: Verificar cobertura mínima (40%)
+        run: |
+          coverage report --fail-under=40
+
+  # ------------------------------------------------------------
+  # Auditoria de segurança das dependências
+  # Complementa o Dependabot: roda pip-audit toda vez
+  # ------------------------------------------------------------
+  security-audit:
+    name: Auditoria de dependências
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar pip-audit
+        run: pip install pip-audit
+
+      - name: Rodar auditoria
+        run: pip-audit -r requirements.txt --strict
+        continue-on-error: true  # Alerta mas não bloqueia

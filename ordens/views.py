@@ -1,5 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
+<<<<<<< HEAD
 from django.http import HttpResponse
+=======
+>>>>>>> 82d5aed7ef080f87f0e97e3b8c8389f8240d1155
 from .forms import OrdemForm
 from .models import OrdemServico
 

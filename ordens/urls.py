@@ -8,4 +8,6 @@ urlpatterns = [
     path('nova/', views.criar_ordem, name='criar'),
     path('<int:id>/editar/', views.editar_ordem, name='editar'),
     path('<int:id>/excluir/', views.excluir_ordem, name='excluir'),
+    path('<int:pk>/apagar/', views.apagar_os_htmx, name='apagar_os_htmx'),
+    
 ]

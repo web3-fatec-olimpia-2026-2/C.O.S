@@ -1,16 +1,32 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <title>Ordem de Serviço</title>
+    <!-- Carrega o HTMX -->
+    <script src="https://unpkg.com/htmx.org"></script>
 </head>
 <body>
     <h1>Ordens de Serviço cadastradas</h1>
     <ul>
         {% for ordem in ordens %}
-            <li>#OS: {{ ordem.numero_OS }} - {{ ordem.data }} - Descrição do Serviço: {{ ordem.descricao }}</li>
+            <li>
+                #OS: {{ ordem.numero_OS }} - {{ ordem.data }} - Descrição do Serviço: {{ ordem.descricao }}
+                
+                <!-- Botão de Apagar com HTMX -->
+                <button 
+                    hx-post="{% url 'ordens:apagar_os_htmx' ordem.pk %}"
+                    hx-target="closest li"
+                    hx-swap="delete"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    style="margin-left: 1rem; padding: 0.3rem 0.6rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;"
+                >
+                    Apagar
+                </button>
+            </li>
         {% empty %}
-            <li>Nenhuma Ordem de Serviço cadastra ainda.</li>
+            <li>Nenhuma Ordem de Serviço cadastrada ainda.</li>
         {% endfor %}
     </ul>
 </body>

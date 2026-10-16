@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse 
 from .forms import OrdemForm
 from .models import OrdemServico
 
@@ -27,3 +28,9 @@ def excluir_ordem(request, pk):
         ordem.delete()
         return redirect('ordens:listar')
     return render(request, "ordens/confirmar_excluir.html", {"ordem": ordem})
+
+# ✅ Sem decorador — funciona direto!
+def apagar_os_htmx(request, pk):
+    ordem = get_object_or_404(OrdemServico, pk=pk)
+    ordem.delete()
+    return HttpResponse(status=200)

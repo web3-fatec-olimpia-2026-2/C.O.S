@@ -29,7 +29,6 @@ def excluir_ordem(request, pk):
         return redirect('ordens:listar')
     return render(request, "ordens/confirmar_excluir.html", {"ordem": ordem})
 
-# ✅ Sem decorador — funciona direto!
 def apagar_os_htmx(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
     ordem.delete()

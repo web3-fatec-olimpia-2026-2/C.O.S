@@ -1,8 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
-<<<<<<< HEAD
+
 from django.http import HttpResponse
-=======
->>>>>>> 82d5aed7ef080f87f0e97e3b8c8389f8240d1155
+
 from .forms import OrdemForm
 from .models import OrdemServico
 
@@ -29,4 +28,12 @@ def excluir_ordem(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
     if request.method == 'DELETE':
         ordem.delete()
-        return HttpResponse('')
+        return redirect('ordens:listar')
+    return render(request, "ordens/confirmar_excluir.html", {"ordem": ordem})
+
+@login_required
+@require_POST
+def apagar_os_htmx(request, pk):
+    ordem = get_object_or_404(OrdemServico, pk=pk)
+    ordem.delete()
+    return HttpResponse(status=200)

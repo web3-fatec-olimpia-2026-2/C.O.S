@@ -24,7 +24,7 @@
 | Douglas Pereira | [@Douglas-LP](https://github.com/Douglas-LP) |
 | Claudinei Feliz | [@Claudineifeliz](https://github.com/Claudineifeliz) |
 | Gleice Constâncio Rodrigues |[@geconstancio](https://github.com/geconstancio) |
-| Marcio Costa [@marciocosta18-hash](https://github.com/marciocosta18-hash)|
+| Marcio Costa | [@marciocosta18-hash](https://github.com/marciocosta18-hash)|
 
 ---
 

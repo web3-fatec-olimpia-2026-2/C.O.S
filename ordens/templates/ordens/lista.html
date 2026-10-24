@@ -4,30 +4,46 @@
 <head>
     <meta charset="UTF-8">
     <title>Ordem de Serviço</title>
-    <!-- Carrega o HTMX -->
-    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
-<body>
-    <h1>Ordens de Serviço cadastradas</h1>
-    <ul>
-        {% for ordem in ordens %}
-            <li>
-                #OS: {{ ordem.numero_OS }} - {{ ordem.data }} - Descrição do Serviço: {{ ordem.descricao }}
-                
-                <!-- Botão de Apagar com HTMX -->
-                <button 
-                    hx-post="{% url 'ordens:apagar_os_htmx' ordem.pk %}"
-                    hx-target="closest li"
-                    hx-swap="delete"
-                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                    style="margin-left: 1rem; padding: 0.3rem 0.6rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;"
-                >
-                    Apagar
-                </button>
-            </li>
-        {% empty %}
-            <li>Nenhuma Ordem de Serviço cadastrada ainda.</li>
-        {% endfor %}
-    </ul>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <h1>Ordens de Serviço</h1>
+    <a href="{% url 'ordens:criar' %}">Criar Nova O.S.</a>
+
+    <table border="1" style="margin-top: 20px;">
+        <thead>
+            <tr>
+                <th>Número OS</th>
+                <th>Descrição</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordem in ordens %}
+            
+            <tr>
+                <td>{{ ordem.numero_OS }}</td>
+                <td>{{ ordem.descricao }}</td>
+                <td>{{ ordem.status }}</td>
+                <td>
+                        <a href="{% url 'ordens:editar' ordem.pk %}">Editar</a>
+                        
+                        
+                        <button hx-delete="{% url 'ordens:excluir' ordem.pk %}"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML"
+                                hx-confirm="Tem certeza que deseja apagar a O.S. #{{ ordem.numero_OS }}?">
+                            Excluir
+                        </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">Nenhuma ordem de serviço cadastrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>

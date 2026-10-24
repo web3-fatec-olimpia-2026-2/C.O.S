@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse 
+
+from django.http import HttpResponse
+
 from .forms import OrdemForm
 from .models import OrdemServico
 
@@ -24,11 +26,13 @@ def editar_ordem(request, pk):
 
 def excluir_ordem(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
-    if request.method == "POST":
+    if request.method == 'DELETE':
         ordem.delete()
         return redirect('ordens:listar')
     return render(request, "ordens/confirmar_excluir.html", {"ordem": ordem})
 
+@login_required
+@require_POST
 def apagar_os_htmx(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
     ordem.delete()

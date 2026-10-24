@@ -4,6 +4,8 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+#    path('usuarios/', include('usuarios.urls')),
+    path('ordens/', include('ordens.urls', namespace='ordens')),
 
     # ✅ Esta linha É AQUI — liga as rotas da sua página inicial
     path('', include('usuarios.urls')),

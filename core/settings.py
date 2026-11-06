@@ -126,7 +126,9 @@ import os
 # Configuração de arquivos estáticos (CSS, JS, imagens).
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+STATICFILES_DIRS = [
+    BASE_DIR / "core" / "static",
+]
 # Configuração de arquivos de mídia enviados pelo usuário.
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -138,6 +140,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Define o modelo de usuário customizado usado no projeto.
 AUTH_USER_MODEL = 'usuarios.Usuario'
+AUTHENTICATION_BACKENDS = [
+    'usuarios.auth_backends.UsuarioOuDocumentoPrestadorBackend',
+]
 
 # URLs de autenticação e redirecionamento após login/logout.
 LOGIN_URL = 'login'

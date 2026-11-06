@@ -1,11 +1,20 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Ordem de Serviço</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+        .acoes {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .acoes form { margin: 0; }
+    </style>
 </head>
+
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <h1>Ordens de Serviço</h1>
     <a href="{% url 'ordens:criar' %}">Criar Nova O.S.</a>
@@ -14,6 +23,7 @@
         <thead>
             <tr>
                 <th>Número OS</th>
+                <th>Gerada em</th>
                 <th>Descrição</th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -21,26 +31,40 @@
         </thead>
         <tbody>
             {% for ordem in ordens %}
-            
-            <tr>
-                <td>{{ ordem.numero_OS }}</td>
-                <td>{{ ordem.descricao }}</td>
-                <td>{{ ordem.status }}</td>
+            <tr id="linha-{{ ordem.pk }}">
                 <td>
+                    {% with num=ordem.numero_OS|stringformat:"s" %}
+                        {% if num|length == 1 %}000{{ num }}
+                        {% elif num|length == 2 %}00{{ num }}
+                        {% elif num|length == 3 %}0{{ num }}
+                        {% else %}{{ num }}
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td>{{ ordem.criada_em|date:"d/m/Y H:i" }}</td>
+                <td>{{ ordem.descricao }}</td>
+                <td>
+                    {{ ordem.get_status_display }}
+                    {% if ordem.entregue_em %}
+                        <br><small>Entregue em {{ ordem.entregue_em|date:"d/m/Y H:i" }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="acoes">
                         <a href="{% url 'ordens:editar' ordem.pk %}">Editar</a>
                         
-                        
-                        <button hx-delete="{% url 'ordens:excluir' ordem.pk %}"
-                                hx-target="closest tr"
-                                hx-swap="outerHTML"
-                                hx-confirm="Tem certeza que deseja apagar a O.S. #{{ ordem.numero_OS }}?">
-                            Excluir
-                        </button>
+                        <form 
+                            action="{% url 'ordens:excluir' ordem.pk %}" 
+                            method="POST"
+                            hx-post="{% url 'ordens:excluir' ordem.pk %}"
+                            hx-target="#linha-{{ ordem.pk }}"
+                            hx-swap="delete"
+                            hx-confirm="Tem certeza que deseja apagar a O.S. #{% with num=ordem.numero_OS|stringformat:'s' %}{% if num|length == 1 %}000{{ num }}{% elif num|length == 2 %}00{{ num }}{% elif num|length == 3 %}0{{ num }}{% else %}{{ num }}{% endif %}{% endwith %}?">
+                            {% csrf_token %}
+                            <button type="submit">Excluir</button>
+                        </form>
+                    </div>
                 </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4">Nenhuma ordem de serviço cadastrada.</td>
             </tr>
             {% endfor %}
         </tbody>

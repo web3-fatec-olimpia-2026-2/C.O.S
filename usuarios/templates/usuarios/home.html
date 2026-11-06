@@ -3,57 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Página Inicial | C.O.S</title>
-    <!-- Estilo básico da página inicial após o login bem-sucedido -->
-    <style>
-        /* Define o fundo e a fonte geral da página para manter o visual consistente */
-        body { font-family: sans-serif; background: #f0f2f5; padding: 2rem; }
-        /* Cabeçalho principal com o nome do usuário e botão de logout */
-        .cabecalho {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        /* Botão de logout com destaque em vermelho para indicar saída do sistema */
-        .btn-sair {
-            padding: 0.5rem 1.25rem;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.95rem;
-        }
-        .btn-sair:hover { background: #dc2626; }
-        /* Área central de conteúdo principal da página inicial */
-        .conteudo {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-    </style>
+    <title>Visão geral | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=17">
 </head>
-<body>
-    <!-- Barra superior com mensagem de boas-vindas e acesso rápido para sair -->
-    <div class="cabecalho">
-        <h2>Bem-vindo, {{ usuario.username }}!</h2>
-        <form action="{% url 'logout' %}" method="POST">
-            {% csrf_token %}
-            <!-- Botão de logout para encerrar a sessão do usuário autenticado -->
-            <button type="submit" class="btn-sair">🔒 Sair</button>
-        </form>
+<body class="pagina-principal">
+
+    <!-- O menu de conta usa <details>; as ações de sessão são processadas pelas views autenticadas. -->
+    <header class="cabecalho">
+        <div class="cabecalho-esq">
+            <img src="{% static 'logo.png' %}" alt="C.O.S" class="logo">
+            <span class="pagina-nome">Visão geral</span>
+        </div>
+        <div class="cabecalho-dir">
+            <button type="button" class="btn btn-principal" id="btnNovaOS">+ Nova O.S.</button>
+            <details class="conta-dropdown">
+                <summary class="identificacao-usuario" aria-label="Abrir opções da conta">
+                    <span class="avatar-usuario" aria-hidden="true">
+                        {% if usuario.first_name %}
+                            {{ usuario.first_name|slice:":1"|upper }}{% if usuario.last_name %}{{ usuario.last_name|slice:":1"|upper }}{% endif %}
+                        {% else %}
+                            {{ usuario.username|slice:":1"|upper }}
+                        {% endif %}
+                    </span>
+                    <span class="usuario-dados">
+                        <span class="usuario-nome">{{ usuario.get_full_name|default:usuario.username }}</span>
+                        <span class="usuario-perfil">{{ usuario.get_perfil_display }}</span>
+                    </span>
+                    <span class="seta-conta" aria-hidden="true">▾</span>
+                </summary>
+                <div class="menu-conta">
+                    <button type="button" class="item-menu-conta" id="abrirLoginOutroId">
+                        Entrar com outro ID
+                    </button>
+                    <form action="{% url 'logout' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="item-menu-conta item-menu-sair">Sair</button>
+                    </form>
+                </div>
+            </details>
+        </div>
+    </header>
+
+    <!-- Conteúdo principal -->
+    <main class="conteudo">
+        <section class="secao-ordens" aria-labelledby="titulo-ordens">
+            <div class="titulo-secao">
+                <div>
+                    <h2 id="titulo-ordens">Ordens de Serviço</h2>
+                    <p>Acompanhe as ordens cadastradas no sistema.</p>
+                </div>
+            </div>
+
+            {# Os IDs da tabela e os atributos data-* são usados pelo home.js para atualizar linhas via AJAX. #}
+
+            {% if ordens %}
+                <div class="tabela-ordens-container" id="containerTabelaOrdens">
+                    <table class="tabela-ordens" id="tabelaOrdens">
+                        <thead>
+                            <tr>
+                                <th scope="col">Número O.S.</th>
+                                <th scope="col">Gerada em</th>
+                                <th scope="col">Descrição</th>
+                                <th scope="col">Data prevista</th>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Prioridade</th>
+                                <th scope="col">Endereço</th>
+                                <th scope="col">Prestador</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaOrdens">
+                            {% for ordem in ordens %}
+                                <tr id="linha-{{ ordem.pk }}" data-delete-url="{% url 'ordens:excluir' ordem.pk %}">
+                                    <td class="numero-os" data-label="Número O.S.">
+                                        <span class="identificador-os">{{ ordem.numero_OS }}</span>
+                                    </td>
+                                    <td class="col-criada-em" data-label="Gerada em">{{ ordem.criada_em|date:"d/m/Y H:i" }}</td>
+                                    <td class="col-descricao" data-label="Descrição">{{ ordem.descricao }}</td>
+                                    <td class="col-data" data-label="Data prevista">{{ ordem.data_prevista|date:"d/m/Y" }}</td>
+                                    <td class="col-categoria" data-label="Categoria">{{ ordem.get_categoria_display }}</td>
+                                    <td class="col-prioridade" data-label="Prioridade">{{ ordem.get_prioridade_display }}</td>
+                                    <td class="col-endereco" data-label="Endereço">{{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}</td>
+                                    <td class="col-prestador" data-label="Prestador">{{ ordem.prestador|default:"Não atribuído" }}</td>
+                                    <td data-label="Status">
+                                        <span class="status-tabela">{{ ordem.get_status_display }}</span>
+                                        {% if ordem.entregue_em %}
+                                            <small class="data-entrega-status">Entregue em {{ ordem.entregue_em|date:"d/m/Y H:i" }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="acoes-tabela" data-label="Ações">
+                                        <div class="grupo-acoes">
+                                            <button class="btn-acao btn-editar" type="button" data-editar
+                                                data-edit-url="{% url 'ordens:editar' ordem.pk %}">Editar</button>
+                                            <button class="btn-acao btn-excluir" type="button" data-excluir>Excluir</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="estado-vazio" id="estadoVazio" hidden>
+                    <h3>Nenhuma O.S. cadastrada</h3>
+                    <p>Use "+ Nova O.S." para criar a primeira ordem de serviço.</p>
+                </div>
+            {% else %}
+                <div class="estado-vazio" id="estadoVazio">
+                    <h3>Nenhuma O.S. cadastrada</h3>
+                    <p>Use "+ Nova O.S." para criar a primeira ordem de serviço.</p>
+                </div>
+
+                {# A tabela permanece no DOM, oculta, para receber a primeira O.S. criada sem recarregar a página. #}
+
+                <div class="tabela-ordens-container" id="containerTabelaOrdens" hidden>
+                    <table class="tabela-ordens" id="tabelaOrdens">
+                        <thead>
+                            <tr>
+                                <th scope="col">Número O.S.</th>
+                                <th scope="col">Gerada em</th>
+                                <th scope="col">Descrição</th>
+                                <th scope="col">Data prevista</th>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Prioridade</th>
+                                <th scope="col">Endereço</th>
+                                <th scope="col">Prestador</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaOrdens"></tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="rodape">
+        <div class="rodape-conteudo">
+            <div class="rodape-marca">
+                <img src="{% static 'logo_os_blue.png' %}" alt="Logo C.O.S." class="logo-rodape">
+                <div class="rodape-identidade">
+                    <h3>C.O.S — Controle de Ordens de Serviço</h3>
+                    <p>Sistema de Gestão de Ordens de Serviço</p>
+                </div>
+            </div>
+            <div class="rodape-links">
+                <a href="#">Visão Geral</a>
+                <a href="#">Relatórios</a>
+                <a href="#">Configurações</a>
+            </div>
+        </div>
+        <div class="rodape-inferior">
+            © 2026 C.O.S — Claudinei, Douglas, Gleice e Márcio | Todos os direitos reservados.
+        </div>
+    </footer>
+
+    {# O mesmo formulário atende criação e edição; a view e o identificador de edição são definidos no servidor. #}
+
+    <div id="fundoPopup" class="fundo-popup{% if abrir_popup %} aberto{% endif %}">
+        <div class="caixa-popup" role="dialog" aria-modal="true" aria-labelledby="titulo-popup">
+            <button type="button" class="botao-fechar" id="btnFecharPopup">&times;</button>
+
+            <img class="logo-popup" src="{% static 'logo.png' %}" alt="Logo C.O.S.">
+            <h3 id="titulo-popup">
+                {% if form.instance.pk %}Editar O.S. #{{ form.instance.numero_OS }}{% else %}Criar Nova Ordem de Serviço{% endif %}
+            </h3>
+            <form id="formNovaOrdem"
+                action="{% if form.instance.pk %}{% url 'ordens:editar' form.instance.pk %}{% else %}{% url 'ordens:criar' %}{% endif %}"
+                data-editing-pk="{{ form.instance.pk|default:'' }}"
+                method="POST">
+                {% csrf_token %}
+                <div id="errosGerais" class="erro-form" role="alert">{{ form.non_field_errors }}</div>
+
+                {% for field in form %}
+                    <div class="grupo-form">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% for error in field.errors %}
+                            <span class="erro-form">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                <div class="botoes-form">
+                    <button type="submit" class="btn btn-principal">
+                        {% if form.instance.pk %}Salvar alterações{% else %}Salvar{% endif %}
+                    </button>
+                    <button type="button" class="btn" id="btnCancelar">Cancelar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- Conteúdo principal exibido após o login do usuário -->
-    <div class="conteudo">
-        <h3>Página Principal do Sistema</h3>
-        <p>Você está logado com sucesso.</p>
+    {# Estes IDs são contratos com home.js para abrir, fechar e enviar a exclusão por POST com CSRF. #}
+
+    <div id="modalConfirmarExclusao" class="fundo-confirmacao" role="dialog"
+        aria-modal="true" aria-labelledby="tituloConfirmarExclusao"
+        aria-describedby="descricaoConfirmarExclusao" hidden>
+        <div class="cartao-confirmacao">
+            <div class="brilho-confirmacao" aria-hidden="true"></div>
+            <img class="logo-confirmacao" src="{% static 'logo.png' %}" alt="">
+            <h2 id="tituloConfirmarExclusao">Excluir ordem de serviço?</h2>
+            <p id="descricaoConfirmarExclusao">
+                Confirme a exclusão da ordem <strong id="numeroOrdemExclusao"></strong>.
+                Esta ação não pode ser desfeita.
+            </p>
+            <p id="erroExclusao" class="erro-confirmacao" role="alert" hidden></p>
+            <div class="botoes-confirmacao">
+                <button type="button" class="btn btn-cancelar-confirmacao" id="cancelarExclusao">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-excluir-confirmacao" id="confirmarExclusao">
+                    Sim, excluir
+                </button>
+            </div>
+        </div>
     </div>
+
+    {# A troca de conta só é confirmada após autenticação bem-sucedida no endpoint AJAX. #}
+    
+    <div id="modalLoginOutroId" class="fundo-login-conta" role="dialog"
+        aria-modal="true" aria-labelledby="tituloLoginOutroId"
+        aria-describedby="descricaoLoginOutroId" hidden>
+        <section class="cartao-login-conta">
+            <div class="brilho-login-conta" aria-hidden="true"></div>
+            <button type="button" class="botao-fechar" id="fecharLoginOutroId"
+                aria-label="Fechar">&times;</button>
+            <img class="logo-login-conta" src="{% static 'logo.png' %}" alt="Logo C.O.S.">
+            <div class="cabecalho-login-conta">
+                <h2 id="tituloLoginOutroId">Entrar com outro ID</h2>
+                <p id="descricaoLoginOutroId">Informe as credenciais da outra conta.</p>
+            </div>
+            <form id="formLoginOutroId" action="{% url 'entrar_com_outro_id' %}" method="POST">
+                {% csrf_token %}
+                <div class="campo-login-conta">
+                    <label for="loginOutroIdUsuario">Usuário</label>
+                    <input id="loginOutroIdUsuario" name="username" type="text"
+                        autocomplete="username" required>
+                </div>
+                <div class="campo-login-conta">
+                    <label for="loginOutroIdSenha">Senha</label>
+                    <input id="loginOutroIdSenha" name="password" type="password"
+                        autocomplete="current-password" required>
+                </div>
+                <p id="erroLoginOutroId" class="erro-login-conta" role="alert" hidden></p>
+                <div class="botoes-login-conta">
+                    <button type="button" class="btn btn-cancelar-confirmacao" id="cancelarLoginOutroId">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-principal" id="confirmarLoginOutroId">
+                        Entrar
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    {# O script conecta os controles acima aos fluxos assíncronos do painel. #}
+    <script src="{% static 'home.js' %}?v=8"></script>
 </body>
 </html>

@@ -381,3 +381,124 @@ class OrdemServicoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b'')
         self.assertFalse(OrdemServico.objects.filter(pk=ordem.pk).exists())
+
+
+class ControleAcessoListagemTests(TestCase):
+    def setUp(self):
+        Usuario = get_user_model()
+
+        self.admin = Usuario.objects.create_user(
+            username='admin_acesso',
+            email='admin_acesso@example.com',
+            password='Senha@123',
+            perfil='ADMINISTRADOR',
+        )
+
+        self.prestador_user = Usuario.objects.create_user(
+            username='prestador_acesso',
+            email='prestador_acesso@example.com',
+            password='Senha@123',
+            perfil='PRESTADOR',
+        )
+
+        self.outro_prestador_user = Usuario.objects.create_user(
+            username='outro_prestador',
+            email='outro_prestador@example.com',
+            password='Senha@123',
+            perfil='PRESTADOR',
+        )
+
+        self.comum = Usuario.objects.create_user(
+            username='comum_acesso',
+            email='comum_acesso@example.com',
+            password='Senha@123',
+            perfil='COMUM',
+        )
+
+        self.premium = Usuario.objects.create_user(
+            username='premium_acesso',
+            email='premium_acesso@example.com',
+            password='Senha@123',
+            perfil='PREMIUM',
+        )
+
+        self.prestador = Prestador.objects.create(
+            usuario=self.prestador_user,
+            nome='Prestador de Teste',
+            documento='TESTE-ACESSO-001',
+            telefone='(17) 90000-0001',
+            email='prestador_teste@example.com',
+        )
+
+        self.outro_prestador = Prestador.objects.create(
+            usuario=self.outro_prestador_user,
+            nome='Outro Prestador',
+            documento='TESTE-ACESSO-002',
+            telefone='(17) 90000-0002',
+            email='outro_teste@example.com',
+        )
+
+        self.ordem_prestador = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Ordem do prestador de teste',
+            endereco='Rua A',
+            numero_endereco='100',
+            bairro='Centro',
+            prestador=self.prestador,
+        )
+
+        self.ordem_outro_prestador = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Ordem de outro prestador',
+            endereco='Rua B',
+            numero_endereco='200',
+            bairro='Centro',
+            prestador=self.outro_prestador,
+        )
+
+        self.ordem_sem_prestador = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Ordem sem prestador',
+            endereco='Rua C',
+            numero_endereco='300',
+            bairro='Centro',
+        )
+
+    def verificar_listagens(self, usuario, ids_esperados):
+        self.client.force_login(usuario)
+
+        urls = [
+            reverse('pagina_inicial'),
+            reverse('ordens:listar'),
+        ]
+
+        for url in urls:
+            response = self.client.get(url)
+
+            self.assertEqual(response.status_code, 200)
+
+            ids_exibidos = set(
+                response.context['ordens'].values_list('id', flat=True)
+            )
+
+            self.assertEqual(ids_exibidos, ids_esperados)
+
+    def test_administrador_visualiza_todas_as_ordens(self):
+        ids_esperados = {
+            self.ordem_prestador.id,
+            self.ordem_outro_prestador.id,
+            self.ordem_sem_prestador.id,
+        }
+
+        self.verificar_listagens(self.admin, ids_esperados)
+
+    def test_prestador_visualiza_somente_suas_ordens(self):
+        ids_esperados = {self.ordem_prestador.id}
+
+        self.verificar_listagens(self.prestador_user, ids_esperados)
+
+    def test_usuario_comum_nao_visualiza_ordens(self):
+        self.verificar_listagens(self.comum, set())
+
+    def test_usuario_premium_nao_visualiza_ordens(self):
+        self.verificar_listagens(self.premium, set())

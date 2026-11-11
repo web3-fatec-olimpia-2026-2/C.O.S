@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from .forms import OrdemForm
 from .models import OrdemServico
-
+from .selectors import ordens_visiveis_para
 
 def _dados_ordem(ordem):
     return {
@@ -33,7 +33,7 @@ def _dados_ordem(ordem):
 
 @login_required
 def listar_ordens(request):
-    ordens = OrdemServico.objects.all()
+    ordens = ordens_visiveis_para(request.user)
     return render(request, "ordens/lista.html", {"ordens": ordens})
 
 
@@ -58,7 +58,7 @@ def criar_ordem(request):
                 'usuario': request.user,
                 'form': form,
                 'abrir_popup': True,
-                'ordens': OrdemServico.objects.select_related('prestador').order_by('-id'),
+                'ordens': ordens_visiveis_para(request.user).order_by('-id'),
             },
         )
     return render(request, "ordens/nova.html", {"form": form})
@@ -105,7 +105,7 @@ def editar_ordem(request, pk):
         {
             'usuario': request.user,
             'form': form,
-            'ordens': OrdemServico.objects.select_related('prestador').order_by('-id'),
+            'ordens': ordens_visiveis_para(request.user).order_by('-id'),
             'abrir_popup': True,
         },
     )

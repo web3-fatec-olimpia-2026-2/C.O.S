@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from ordens.forms import OrdemForm
-from ordens.models import OrdemServico
+from ordens.selectors import ordens_visiveis_para
 
 # Garante que apenas usuários logados consigam acessar esta página.
 @login_required
@@ -20,7 +20,7 @@ def pagina_inicial(request):
         {
             'usuario': request.user,
             'form': OrdemForm(),
-            'ordens': OrdemServico.objects.select_related('prestador').order_by('-id'),
+            'ordens': ordens_visiveis_para(request.user).order_by('-id'),
         },
     )
 

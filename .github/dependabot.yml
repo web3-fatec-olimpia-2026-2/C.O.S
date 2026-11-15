@@ -1,0 +1,78 @@
+# =====================================================================
+# CONFIGURAÇÃO DO DEPENDABOT
+# =====================================================================
+# Web III - FATEC Olímpia - 2026/2
+#
+# Este arquivo faz com que o Dependabot verifique automaticamente
+# as dependências do projeto e abra Pull Requests quando encontrar:
+#   - Versões vulneráveis (com CVE registrado)
+#   - Versões novas disponíveis
+#
+# Documentação oficial:
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# NÃO PRECISA ATIVAR NADA NA UI - basta ter este arquivo commitado.
+# =====================================================================
+
+version: 2
+updates:
+
+  # ------------------------------------------------------------
+  # PYTHON (Django, DRF, pytest, etc)
+  # Monitora o arquivo requirements.txt na raiz do projeto
+  # ------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "security"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Se o grupo usar Poetry em vez de requirements.txt,
+    # trocar "pip" por "pip" com directory apontando para pyproject.toml
+    # ou usar "poetry" quando aplicavel
+    reviewers:
+      - "web3-fatec-olimpia-2026-2/professores"
+
+  # ------------------------------------------------------------
+  # JAVASCRIPT / NPM (frontend React na aula 18, ou outras libs)
+  # Só ativa se o projeto tiver package.json
+  # ------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "security"
+    commit-message:
+      prefix: "deps(frontend)"
+    # Comentar essa seção se o projeto não tiver frontend/
+
+  # ------------------------------------------------------------
+  # GITHUB ACTIONS (as próprias actions usadas no CI)
+  # Mantém o CI seguro e atualizado
+  # ------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"

@@ -538,68 +538,69 @@ body.pagina-principal .conteudo {
   padding: 0.65rem 2rem;
   background: var(--azul-marinho);
   color: var(--branco);
-  font-size: 0.78rem;
+  font-size: 1rem;
   text-align: center;
 }
 
 /* Responsividade */
 @media (max-width: 640px) {
+  body {
+    background: #edf1f0;
+  }
+
   .cabecalho {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.7rem;
-    padding: 0.75rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid #dfe7ea;
+    background: rgba(255, 255, 255, 0.96);
   }
 
   .cabecalho-esq {
-    width: 100%;
-    gap: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 1;
+    min-width: 0;
   }
 
   img.logo {
-    width: 44px;
+    width: 36px;
+    filter: drop-shadow(0 1px 0 rgba(9, 30, 51, 0.08));
   }
 
   .pagina-nome {
-    min-height: 2rem;
-    padding-left: 0.75rem;
+    min-height: auto;
+    padding-left: 0.55rem;
+    border-left: 1px solid #c9d5dc;
     font-size: 0.9rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    color: #1d2a36;
   }
 
   .cabecalho-dir {
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    gap: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    flex-shrink: 0;
   }
 
   .cabecalho-dir > .btn {
-    flex: 0 0 auto;
-    padding: 0.55rem 0.8rem;
-    font-size: 0.82rem;
-    white-space: nowrap;
-  }
-
-  .identificacao-usuario {
-    min-width: 0;
-    gap: 0.4rem;
-    padding: 0.3rem 0.45rem 0.3rem 0.3rem;
-  }
-
-  .avatar-usuario {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
-    border-radius: 9px;
-  }
-
-  .usuario-nome {
-    max-width: clamp(5rem, 25vw, 8rem);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0.5rem 0.8rem;
+    border-radius: 12px;
     font-size: 0.8rem;
-  }
-
-  .usuario-perfil {
-    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(10, 48, 81, 0.12);
   }
 
   .conta-dropdown {
@@ -607,66 +608,171 @@ body.pagina-principal .conteudo {
     flex: 0 1 auto;
   }
 
-  .menu-conta {
-    width: min(220px, calc(100vw - 1.7rem));
+  .identificacao-usuario {
     min-width: 0;
+    gap: 0.45rem;
+    padding: 0.25rem 0.45rem 0.25rem 0.2rem;
+    border: 1px solid #dfe9ee;
+    border-radius: 12px;
+    background: #edf5ef;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  }
+
+  .avatar-usuario {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    background: #dfeee4;
+    color: #1d5b46;
+  }
+
+  .usuario-dados {
+    min-width: 0;
+    line-height: 1.15;
+  }
+
+  .usuario-nome {
+    max-width: clamp(5rem, 24vw, 8rem);
+    font-size: 0.77rem;
+    color: #1e2d39;
+  }
+
+  .usuario-perfil {
+    font-size: 0.62rem;
+    color: #6a7e87;
+  }
+
+  .seta-conta {
+    font-size: 0.7rem;
+    color: #697b82;
+  }
+
+  .menu-conta {
+    width: min(200px, calc(100vw - 1.4rem));
+    min-width: 0;
+    right: 0;
   }
 
   .conteudo {
-    padding: 1rem 0.85rem;
+    padding: 1rem 0.9rem 1.3rem;
+  }
+
+  .secao-ordens {
+    margin-top: 0.2rem;
   }
 
   .titulo-secao {
-    align-items: flex-start;
+    display: block;
+    margin-bottom: 0.8rem;
   }
 
   .titulo-secao h2 {
-    font-size: 1.3rem;
+    margin-bottom: 0.25rem;
+    font-size: 2rem;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
   }
 
   .titulo-secao p {
-    font-size: 0.9rem;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    color: #5a6d77;
+  }
+
+  .estado-vazio {
+    min-height: 200px;
+    padding: 2rem 1.2rem;
+    background: rgba(255, 255, 255, 0.24);
+    border: 1px dashed #b9c6cb;
+    border-radius: 12px;
+  }
+
+  .estado-vazio h3 {
+    font-size: 1.08rem;
+    margin-bottom: 0.8rem;
+    line-height: 1.3;
+  }
+
+  .estado-vazio p {
+    font-size: 1.04rem;
+    line-height: 1.45;
+    max-width: 18ch;
+    margin: 0 auto;
   }
 
   .rodape {
-    padding: 1rem 1rem 0.7rem;
+    padding: 0;
+    background: #eef2f4;
+    border-top: 1px solid #dfe7eb;
   }
 
   .rodape-conteudo {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .logo-rodape {
-    width: 52px;
-    flex-basis: 52px;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.8rem 0.9rem 0.55rem;
+    background: #eef2f4;
   }
 
   .rodape-marca {
-    gap: 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.12rem;
+    min-width: 0;
+    flex: 1;
   }
 
-  .rodape-marca h3 {
-    font-size: 0.9rem;
+  .logo-rodape {
+    width: 32px;
+    flex-basis: 32px;
+    height: auto;
+    margin-top: 0.2rem;
   }
 
-  .rodape-marca p {
-    font-size: 0.8rem;
+  .rodape-identidade {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.18rem;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .rodape-identidade h3 {
+    display: inline-block;
+    margin: 0;
+    font-size: 2.3rem;
+    line-height: 1.2;
+    font-weight: 100;
+    letter-spacing: -0.02em;
+    color: #1b2d3b;
+    white-space: nowrap;
+  }
+
+  .rodape-identidade p {
+    margin: 0;
+    font-size: 2.3rem;
+    line-height: 1.2;
+    color: #5d717d;
+    white-space: nowrap;
   }
 
   .rodape-links {
-    gap: 0.65rem 0.9rem;
-    font-size: 0.82rem;
+    display: none;
   }
 
   .rodape-inferior {
+    margin: 0;
+    padding: 0.6rem 0.9rem 0.7rem;
+    background: #0c3558;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: 1rem;
+    line-height: 1.5;
     text-align: left;
-    margin: 0.75rem -1rem -0.7rem;
-    padding: 0.65rem 1rem;
-    font-size: 0.74rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
   }
-
 }
 
 /* ==============================================
@@ -1176,4 +1282,140 @@ body.pagina-principal .conteudo {
     .logo-login-conta {
         animation: none;
     }
+}
+/* ============================================================
+   TELA ADMIN — Painel de Ordens de Serviço (sidebar + badges)
+   ============================================================ */
+body.painel-admin {
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+    background: var(--branco-gelo);
+}
+.adm-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--azul-marinho);
+    display: flex;
+    flex-direction: column;
+    padding: 1.75rem 0 1rem;
+}
+.adm-logo-box {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+}
+.adm-logo-img { width: 46px; height: auto; display: block; }
+.adm-logo-texto {
+    text-align: center;
+    color: #9fb4c4;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    margin-top: 0.6rem;
+    font-weight: 600;
+}
+.adm-menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1.75rem 0.75rem 0;
+}
+.adm-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    border-radius: 9px;
+    color: #c6d5e0;
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+}
+a.adm-menu-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.adm-menu-item--ativo { background: var(--verde-lima); color: var(--azul-marinho); font-weight: 700; }
+a.adm-menu-item--ativo:hover { background: var(--verde-lima); color: var(--azul-marinho); }
+.adm-menu-item--desabilitado { opacity: 0.45; cursor: not-allowed; }
+.adm-menu-icone { width: 18px; text-align: center; flex-shrink: 0; font-size: 1rem; }
+.adm-menu-tag { margin-left: auto; font-size: 0.62rem; background: rgba(255,255,255,0.18); color: #dce7ef; padding: 0.12rem 0.5rem; border-radius: 999px; font-weight: 600; }
+.adm-sidebar form { margin: 0 0.75rem; }
+.adm-sair {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #c6d5e0;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+}
+.adm-sair:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.adm-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.adm-topbar {
+    background: #fff;
+    padding: 1.1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--borda);
+}
+.adm-topbar h1 { font-size: 1.4rem; color: var(--azul-marinho); font-weight: 700; }
+.adm-topbar-dir { display: flex; align-items: center; gap: 1rem; }
+.btn-verde { background: var(--verde-lima); color: var(--azul-marinho); border-color: var(--verde-lima); font-weight: 700; }
+.btn-verde:hover { background: #7cc93a; border-color: #7cc93a; box-shadow: 0 3px 8px rgb(137 217 67 / 35%); transform: translateY(-1px); }
+.adm-conteudo { padding: 2rem; flex: 1; }
+.adm-filtros { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.adm-busca { flex: 1; min-width: 240px; padding: 0.68rem 1rem; border: 1px solid var(--borda); border-radius: 9px; font-size: 0.9rem; background: #fff; color: var(--texto); }
+.adm-busca:focus { outline: none; border-color: var(--azul-marinho); box-shadow: 0 0 0 3px rgb(10 48 81 / 10%); }
+.adm-select { padding: 0.68rem 1rem; border: 1px solid var(--borda); border-radius: 9px; font-size: 0.9rem; background: #fff; color: var(--texto); min-width: 150px; cursor: pointer; }
+.adm-tabela-wrap { background: #fff; border: 1px solid var(--borda); border-radius: 12px; overflow-x: auto; box-shadow: 0 1px 3px rgb(15 23 42 / 4%); }
+.adm-tabela { width: 100%; border-collapse: collapse; text-align: left; min-width: 820px; }
+.adm-tabela th, .adm-tabela td { padding: 0.9rem 1rem; border-bottom: 1px solid var(--borda); font-size: 0.88rem; vertical-align: middle; }
+.adm-tabela th { background: #f4f7f9; color: var(--azul-marinho); font-weight: 600; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.adm-tabela tbody tr:last-child td { border-bottom: 0; }
+.adm-tabela tbody tr:hover { background: #f8fafb; }
+.adm-numero { color: var(--azul-marinho); font-weight: 800; font-size: 0.95rem; }
+.adm-descricao { color: var(--texto); max-width: 300px; }
+.adm-categoria { color: var(--azul-acinzentado); }
+.adm-previsto { color: var(--azul-acinzentado); white-space: nowrap; }
+.adm-prestador { white-space: nowrap; color: var(--texto); }
+.adm-vazio { text-align: center; color: var(--azul-acinzentado); padding: 2rem !important; }
+.adm-badge { display: inline-block; padding: 0.28rem 0.75rem; border-radius: 999px; font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
+.adm-badge--urgente { background: #fde8e8; color: #c0392b; }
+.adm-badge--alta { background: #fef0e0; color: #d97706; }
+.adm-badge--normal { background: #eef1f4; color: #5b6b75; }
+.adm-badge--baixa { background: #e6f4ea; color: #3d7a52; }
+.adm-badge--aberta { background: #e3edf3; color: #0A3051; }
+.adm-badge--execucao { background: #e6f4ea; color: #2e7d4f; }
+.adm-badge--analise { background: #fdf3d7; color: #92650a; }
+.adm-badge--concluida { background: var(--azul-marinho); color: #fff; }
+.adm-btn-abrir { display: inline-block; padding: 0.38rem 1rem; border: 1px solid var(--borda); border-radius: 7px; background: #fff; color: var(--azul-marinho); font-size: 0.8rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.adm-btn-abrir:hover { border-color: var(--azul-marinho); background: #f0f5f8; }
+.adm-paginacao { display: flex; justify-content: space-between; align-items: center; margin-top: 1.1rem; flex-wrap: wrap; gap: 0.75rem; }
+.adm-paginacao-info { color: var(--azul-acinzentado); font-size: 0.85rem; }
+.adm-paginas { display: flex; gap: 0.35rem; align-items: center; }
+.adm-pagina-link { min-width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 0 0.65rem; border: 1px solid var(--borda); border-radius: 7px; background: #fff; color: var(--azul-marinho); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+a.adm-pagina-link:hover { border-color: var(--azul-marinho); }
+.adm-pagina-link--ativa { background: var(--azul-marinho); color: #fff; border-color: var(--azul-marinho); }
+.adm-pagina-link--desabilitada { opacity: 0.4; pointer-events: none; }
+@media (max-width: 860px) {
+    .adm-sidebar { display: none; }
+    .adm-conteudo { padding: 1.25rem; }
+    .adm-topbar { padding: 1rem 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+}
+
+/* Ajuste: sidebar fixa durante a rolagem (desktop) */
+@media (min-width: 861px) {
+    .adm-sidebar { position: sticky; top: 0; height: 100vh; }
 }

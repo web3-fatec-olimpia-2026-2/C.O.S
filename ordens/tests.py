@@ -502,3 +502,42 @@ class ControleAcessoListagemTests(TestCase):
 
     def test_usuario_premium_nao_visualiza_ordens(self):
         self.verificar_listagens(self.premium, set())
+
+
+class ListarAdminTests(TestCase):
+    """A tela /ordens/admin/ é restrita a administradores."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username='admintela', email='admintela@example.com',
+            password='Senha@123', perfil='ADMINISTRADOR',
+        )
+        self.prestador_user = User.objects.create_user(
+            username='presttela', email='presttela@example.com',
+            password='Senha@123', perfil='PRESTADOR',
+        )
+
+    def test_admin_acessa_tela(self):
+        self.client.force_login(self.admin)
+        resposta = self.client.get(reverse('ordens:listar_admin'))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'Ordens de Serviço')
+        self.assertTemplateUsed(resposta, 'ordens/admin_lista.html')
+
+    def test_prestador_bloqueado_com_403(self):
+        self.client.force_login(self.prestador_user)
+        resposta = self.client.get(reverse('ordens:listar_admin'))
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_anonimo_redireciona_para_login(self):
+        resposta = self.client.get(reverse('ordens:listar_admin'))
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn('/login/', resposta.url)
+
+    def test_busca_e_filtro_sao_aceitos(self):
+        self.client.force_login(self.admin)
+        resposta = self.client.get(reverse('ordens:listar_admin'), {
+            'q': 'faixa', 'status': 'ABERTA', 'prestador': '99',
+        })
+        self.assertEqual(resposta.status_code, 200)

@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -74,6 +76,13 @@ class OrdemServico(models.Model):
         if not self.data_prevista:
             return
 
+        data_prevista = self.data_prevista
+        if isinstance(data_prevista, str):
+            try:
+                data_prevista = date.fromisoformat(data_prevista)
+            except ValueError:
+                return
+
         data_anterior = None
         if self.pk:
             data_anterior = type(self).objects.filter(pk=self.pk).values_list(
@@ -81,7 +90,7 @@ class OrdemServico(models.Model):
                 flat=True,
             ).first()
 
-        if self.data_prevista < timezone.localdate() and data_anterior != self.data_prevista:
+        if data_prevista < timezone.localdate() and data_anterior != data_prevista:
             raise ValidationError({
                 'data_prevista': 'A data prevista não pode ser anterior à data atual.'
             })

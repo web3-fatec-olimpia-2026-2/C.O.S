@@ -130,3 +130,79 @@ def apagar_os_htmx(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
     ordem.delete()
     return HttpResponse(status=204)
+
+
+# ============================================================
+# Tela administrativa de Ordens de Serviço (somente ADMINISTRADOR)
+# ============================================================
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
+from usuarios.models import Prestador
+
+_CATEGORIA_CURTA = {
+    OrdemServico.Categoria.SINALIZACAO_HORIZONTAL: 'Horizontal',
+    OrdemServico.Categoria.SINALIZACAO_VERTICAL: 'Vertical',
+    OrdemServico.Categoria.SINALIZACAO_SEMAFORICA: 'Semafórica',
+}
+
+
+def _nome_curto_prestador(prestador):
+    """Douglas Pereira -> Douglas P. (como no mockup)."""
+    if not prestador:
+        return 'Não atribuído'
+    partes = prestador.nome.strip().split()
+    if len(partes) == 1:
+        return partes[0]
+    return f"{partes[0]} {partes[-1][:1]}."
+
+
+@login_required
+def listar_ordens_admin(request):
+    """Painel administrativo: lista completa de O.S. com busca, filtros e paginação.
+    Acesso restrito ao perfil ADMINISTRADOR."""
+    if request.user.perfil != 'ADMINISTRADOR':
+        raise PermissionDenied('Acesso restrito a administradores.')
+
+    busca = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '').strip()
+    prestador_id = request.GET.get('prestador', '').strip()
+
+    ordens = OrdemServico.objects.select_related('prestador').order_by('-id')
+
+    if busca:
+        ordens = ordens.filter(
+            Q(descricao__icontains=busca)
+            | Q(endereco__icontains=busca)
+            | Q(bairro__icontains=busca)
+            | Q(numero_OS__icontains=busca)
+        )
+    if status:
+        ordens = ordens.filter(status=status)
+    if prestador_id:
+        ordens = ordens.filter(prestador_id=prestador_id)
+
+    paginador = Paginator(ordens, 10)
+    pagina = paginador.get_page(request.GET.get('pagina'))
+
+    for ordem in pagina.object_list:
+        ordem.categoria_curta = _CATEGORIA_CURTA.get(
+            ordem.categoria, ordem.get_categoria_display()
+        )
+        ordem.prestador_curto = _nome_curto_prestador(ordem.prestador)
+
+    params = request.GET.copy()
+    params.pop('pagina', None)
+    query_base = params.urlencode()
+
+    return render(request, 'ordens/admin_lista.html', {
+        'usuario': request.user,
+        'page_obj': pagina,
+        'paginator': paginador,
+        'is_paginated': pagina.has_other_pages(),
+        'status_opcoes': OrdemServico.Status.choices,
+        'prestadores': Prestador.objects.filter(status=True).order_by('nome'),
+        'filtro': {'q': busca, 'status': status, 'prestador': prestador_id},
+        'query_base': query_base,
+        'total': paginador.count,
+    })

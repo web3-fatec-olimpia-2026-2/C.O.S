@@ -6,6 +6,17 @@ from .models import Prestador
 
 
 class UsuarioAuthTests(TestCase):
+    def test_tela_login_exibe_marca_responsiva_e_controle_de_senha(self):
+        response = self.client.get(reverse('login'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Controle de Ordens de Serviço')
+        self.assertContains(response, 'Use seu usuário ou, se for prestador, o seu documento.')
+        self.assertContains(response, 'logo-mobile')
+        self.assertContains(response, 'class="alternar-senha"')
+        self.assertContains(response, 'static/css/login.css')
+        self.assertContains(response, 'static/js/login.js')
+
     def test_django_admin_disponibiliza_perfil_e_vinculo_de_prestador(self):
         administrador = get_user_model().objects.create_superuser(
             username='admin-configuracao',

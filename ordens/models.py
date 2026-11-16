@@ -113,3 +113,15 @@ class OrdemServico(models.Model):
 
     def __str__(self):
         return f"OS-{self.numero_OS}"
+
+class FotosOS(models.Model):
+    ordem = models.ForeignKey(
+        OrdemServico,
+        on_delete=models.CASCADE,
+        related_name='fotos'
+    )
+    imagem = models.ImageField(upload_to='comprovantes/')
+    data_envio = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comprovante OS-{self.ordem.numero_OS} ({self.id})"

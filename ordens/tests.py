@@ -1,13 +1,17 @@
+import io
+import pytest
 from datetime import timedelta
 from unittest.mock import patch
+from PIL import Image
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-from .forms import OrdemForm
-from .models import OrdemServico
+from .forms import OrdemForm, FotoOSForm
+from .models import OrdemServico, FotosOS
 from usuarios.models import Prestador
 
 
@@ -502,3 +506,168 @@ class ControleAcessoListagemTests(TestCase):
 
     def test_usuario_premium_nao_visualiza_ordens(self):
         self.verificar_listagens(self.premium, set())
+
+User = get_user_model()
+
+
+def gerar_imagem_teste(nome='comprovante.jpg', formato='JPEG'):
+    """Gera uma imagem válida em memória usando Pillow."""
+    buffer = io.BytesIO()
+    img = Image.new('RGB', (100, 100), color='blue')
+    img.save(buffer, format=formato)
+    buffer.seek(0)
+    return SimpleUploadedFile(
+        name=nome,
+        content=buffer.read(),
+        content_type=f'image/{formato.lower()}',
+    )
+
+
+@pytest.fixture
+def usuario(db):
+    return User.objects.create_user(
+        username='dev_teste',
+        password='SenhaForte123!',
+    )
+
+
+@pytest.fixture
+def ordem(db):
+    return OrdemServico.objects.create(
+        data_prevista=timezone.localdate(),
+        descricao='Manutenção de semáforo',
+        endereco='Av. Principal',
+        numero_endereco='100',
+        bairro='Centro',
+    )
+
+
+@pytest.fixture(autouse=True)
+def media_temporaria(settings, tmp_path):
+    """Isola o MEDIA_ROOT em uma pasta temporária para cada teste."""
+    settings.MEDIA_ROOT = tmp_path
+
+
+# ==========================================
+# 1. TESTES DO MODELO (FotoOS)
+# ==========================================
+
+@pytest.mark.django_db
+def test_criar_foto_os_e_relacionamento(ordem):
+    foto1 = FotosOS.objects.create(ordem=ordem, imagem=gerar_imagem_teste('foto1.jpg'))
+    foto2 = FotosOS.objects.create(ordem=ordem, imagem=gerar_imagem_teste('foto2.jpg'))
+
+    assert ordem.fotos.count() == 2
+    assert list(ordem.fotos.all()) == [foto1, foto2]
+    assert foto1.data_envio is not None
+    assert str(foto1) == f"Comprovante OS-{ordem.numero_OS} ({foto1.id})"
+
+
+@pytest.mark.django_db
+def test_cascade_ao_excluir_ordem_remove_fotos(ordem):
+    FotosOS.objects.create(ordem=ordem, imagem=gerar_imagem_teste())
+    assert FotosOS.objects.count() == 1
+
+    ordem.delete()
+    assert FotosOS.objects.count() == 0
+
+
+# ==========================================
+# 2. TESTES DO FORMULÁRIO (FotoOSForm)
+# ==========================================
+
+def test_foto_form_valido():
+    arquivo = gerar_imagem_teste()
+    form = FotoOSForm(data={}, files={'imagem': arquivo})
+    assert form.is_valid()
+
+
+def test_foto_form_invalido_com_arquivo_nao_imagem():
+    arquivo_txt = SimpleUploadedFile(
+        'documento.txt',
+        b'conteudo invalido que nao e imagem',
+        content_type='text/plain',
+    )
+    form = FotoOSForm(data={}, files={'imagem': arquivo_txt})
+    assert not form.is_valid()
+    assert 'imagem' in form.errors
+
+
+# ==========================================
+# 3. TESTES DA VIEW (anexar_foto)
+# ==========================================
+
+@pytest.mark.django_db
+def test_anexar_foto_exige_login(client, ordem):
+    url = reverse('ordens:anexar_foto', args=[ordem.pk])
+    response = client.post(url, {'imagem': gerar_imagem_teste()})
+
+    assert response.status_code == 302
+    assert FotosOS.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_anexar_foto_bloqueia_get(client, usuario, ordem):
+    client.force_login(usuario)
+    url = reverse('ordens:anexar_foto', args=[ordem.pk])
+    response = client.get(url)
+
+    assert response.status_code == 405
+
+
+@pytest.mark.django_db
+def test_anexar_foto_upload_tradicional_sucesso(client, usuario, ordem):
+    client.force_login(usuario)
+    url = reverse('ordens:anexar_foto', args=[ordem.pk])
+
+    response = client.post(url, {'imagem': gerar_imagem_teste()})
+
+    assert response.status_code == 302
+    assert response.url == reverse('pagina_inicial')
+    assert ordem.fotos.count() == 1
+
+
+@pytest.mark.django_db
+def test_anexar_foto_ajax_sucesso(client, usuario, ordem):
+    client.force_login(usuario)
+    url = reverse('ordens:anexar_foto', args=[ordem.pk])
+
+    response = client.post(
+        url,
+        {'imagem': gerar_imagem_teste()},
+        HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+    )
+
+    assert response.status_code == 200
+    dados = response.json()
+    assert dados['success'] is True
+    assert 'url' in dados['foto']
+    assert 'data_envio' in dados['foto']
+    assert ordem.fotos.count() == 1
+
+
+@pytest.mark.django_db
+def test_anexar_foto_ajax_erro_validacao(client, usuario, ordem):
+    client.force_login(usuario)
+    url = reverse('ordens:anexar_foto', args=[ordem.pk])
+
+    response = client.post(
+        url,
+        {},  # Sem imagem
+        HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+    )
+
+    assert response.status_code == 400
+    dados = response.json()
+    assert dados['success'] is False
+    assert 'imagem' in dados['errors']
+    assert FotosOS.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_anexar_foto_ordem_inexistente_retorna_404(client, usuario):
+    client.force_login(usuario)
+    url = reverse('ordens:anexar_foto', args=[99999])
+
+    response = client.post(url, {'imagem': gerar_imagem_teste()})
+    assert response.status_code == 404

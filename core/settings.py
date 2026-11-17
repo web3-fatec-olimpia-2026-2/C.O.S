@@ -13,24 +13,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import environ
 
-# Define a raiz do projeto para localizar arquivos e pastas do Django.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# Chave secreta do projeto; em produção, deve ficar fora do código-fonte.
-SECRET_KEY = 'django-insecure-=tu1s&5)l(9eb23(37(-z5wg_$&jmk$uc^=0mf-*-sq_r3m)hu'
-
-# Ativa modo de depuração para facilitar desenvolvimento local.
-DEBUG = True
-
-# Lista de hosts permitidos para acesso ao projeto.
-ALLOWED_HOSTS = []
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only-key")
+DEBUG = env.bool("DEBUG", default=True)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 
 # Application definition
@@ -63,7 +53,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'core' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,9 +71,8 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Configuração do banco de dados local do projeto.
 DATABASES = {
-    'default': env.db('DATABASE_URL')
+    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
 # Password validation

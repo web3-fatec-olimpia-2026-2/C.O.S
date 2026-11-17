@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordens de Serviço | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=19">
+</head>
+<body class="painel-admin">
+
+    <!-- Barra lateral -->
+    <aside class="adm-sidebar" aria-label="Navegação principal">
+        <div class="adm-logo-box">
+            <img src="{% static 'logo.png' %}" alt="C.O.S" class="adm-logo-img">
+        </div>
+        <p class="adm-logo-texto">ORDEM DE SERVIÇO</p>
+
+        <nav class="adm-menu">
+            <a href="{% url 'pagina_inicial' %}" class="adm-menu-item">
+                <span class="adm-menu-icone" aria-hidden="true">◔</span>
+                Visão geral
+            </a>
+            <a href="{% url 'ordens:listar_admin' %}" class="adm-menu-item adm-menu-item--ativo" aria-current="page">
+                <span class="adm-menu-icone" aria-hidden="true">☰</span>
+                Ordens de Serviço
+            </a>
+            <span class="adm-menu-item adm-menu-item--desabilitado" title="Módulo em desenvolvimento">
+                <span class="adm-menu-icone" aria-hidden="true">◉</span>
+                Usuários
+                <span class="adm-menu-tag">em breve</span>
+            </span>
+            <span class="adm-menu-item adm-menu-item--desabilitado" title="Módulo em desenvolvimento">
+                <span class="adm-menu-icone" aria-hidden="true">▤</span>
+                Relatórios
+                <span class="adm-menu-tag">em breve</span>
+            </span>
+        </nav>
+
+        <form action="{% url 'logout' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="adm-sair">
+                <span class="adm-menu-icone" aria-hidden="true">⏻</span>
+                Sair
+            </button>
+        </form>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <div class="adm-main">
+        <header class="adm-topbar">
+            <h1>Ordens de Serviço</h1>
+            <div class="adm-topbar-dir">
+                <a href="{% url 'ordens:criar' %}" class="btn btn-verde">+ Nova O.S.</a>
+                <details class="conta-dropdown">
+                    <summary class="identificacao-usuario" aria-label="Abrir opções da conta">
+                        <span class="avatar-usuario" aria-hidden="true">
+                            {% if usuario.first_name %}
+                                {{ usuario.first_name|slice:":1"|upper }}{% if usuario.last_name %}{{ usuario.last_name|slice:":1"|upper }}{% endif %}
+                            {% else %}
+                                {{ usuario.username|slice:":1"|upper }}
+                            {% endif %}
+                        </span>
+                        <span class="usuario-dados">
+                            <span class="usuario-nome">{{ usuario.get_full_name|default:usuario.username }}</span>
+                            <span class="usuario-perfil">{{ usuario.get_perfil_display }}</span>
+                        </span>
+                        <span class="seta-conta" aria-hidden="true">▾</span>
+                    </summary>
+                    <div class="menu-conta">
+                        <form action="{% url 'logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="item-menu-conta item-menu-sair">Sair</button>
+                        </form>
+                    </div>
+                </details>
+            </div>
+        </header>
+
+        <main class="adm-conteudo">
+            <!-- Busca e filtros -->
+            <form method="GET" class="adm-filtros" role="search">
+                <input type="search" name="q" value="{{ filtro.q }}" placeholder="Buscar por descrição, local ou número..." class="adm-busca" aria-label="Buscar ordens de serviço">
+                <select name="status" class="adm-select" aria-label="Filtrar por status" onchange="this.form.submit()">
+                    <option value="">Status</option>
+                    {% for valor, rotulo in status_opcoes %}
+                        <option value="{{ valor }}" {% if filtro.status == valor %}selected{% endif %}>{{ rotulo }}</option>
+                    {% endfor %}
+                </select>
+                <select name="prestador" class="adm-select" aria-label="Filtrar por prestador" onchange="this.form.submit()">
+                    <option value="">Prestador</option>
+                    {% for p in prestadores %}
+                        <option value="{{ p.id }}" {% if filtro.prestador == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
+                    {% endfor %}
+                </select>
+                <noscript><button type="submit" class="btn btn-principal">Filtrar</button></noscript>
+            </form>
+
+            <!-- Tabela -->
+            <div class="adm-tabela-wrap">
+                <table class="adm-tabela">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nº</th>
+                            <th scope="col">Descrição</th>
+                            <th scope="col">Categoria</th>
+                            <th scope="col">Prioridade</th>
+                            <th scope="col">Prevista</th>
+                            <th scope="col">Prestador</th>
+                            <th scope="col">Status</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ordem in page_obj %}
+                        <tr>
+                            <td class="adm-numero">{{ ordem.numero_OS }}</td>
+                            <td class="adm-descricao">{{ ordem.descricao|truncatechars:60 }}</td>
+                            <td class="adm-categoria">{{ ordem.categoria_curta }}</td>
+                            <td>
+                                {% if ordem.prioridade == 'URGENTE' %}
+                                    <span class="adm-badge adm-badge--urgente">Urgente</span>
+                                {% elif ordem.prioridade == 'ALTA' %}
+                                    <span class="adm-badge adm-badge--alta">Alta</span>
+                                {% elif ordem.prioridade == 'BAIXA' %}
+                                    <span class="adm-badge adm-badge--baixa">Baixa</span>
+                                {% else %}
+                                    <span class="adm-badge adm-badge--normal">Normal</span>
+                                {% endif %}
+                            </td>
+                            <td class="adm-previsto">{{ ordem.data_prevista|date:"d/m" }}</td>
+                            <td class="adm-prestador">{{ ordem.prestador_curto }}</td>
+                            <td>
+                                {% if ordem.status == 'ABERTA' %}
+                                    <span class="adm-badge adm-badge--aberta">Aberta</span>
+                                {% elif ordem.status == 'EM EXECUÇÃO' %}
+                                    <span class="adm-badge adm-badge--execucao">Em execução</span>
+                                {% elif ordem.status == 'EM ANÁLISE' %}
+                                    <span class="adm-badge adm-badge--analise">Em análise</span>
+                                {% else %}
+                                    <span class="adm-badge adm-badge--concluida">Concluída</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="{% url 'ordens:editar' ordem.pk %}" class="adm-btn-abrir">Abrir</a></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="adm-vazio">Nenhuma ordem de serviço encontrada com os filtros atuais.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <div class="adm-paginacao">
+                <span class="adm-paginacao-info">
+                    Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ total }}
+                </span>
+                {% if is_paginated %}
+                <nav class="adm-paginas" aria-label="Paginação">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.previous_page_number }}" class="adm-pagina-link">‹ Anterior</a>
+                    {% else %}
+                        <span class="adm-pagina-link adm-pagina-link--desabilitada">‹ Anterior</span>
+                    {% endif %}
+
+                    {% for num in paginator.page_range %}
+                        {% if num == page_obj.number %}
+                            <span class="adm-pagina-link adm-pagina-link--ativa">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ num }}" class="adm-pagina-link">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.next_page_number }}" class="adm-pagina-link">Próxima ›</a>
+                    {% else %}
+                        <span class="adm-pagina-link adm-pagina-link--desabilitada">Próxima ›</span>
+                    {% endif %}
+                </nav>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

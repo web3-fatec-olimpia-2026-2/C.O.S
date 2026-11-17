@@ -95,7 +95,7 @@ pytest --cov=. --cov-report=html
 
 - [Arquitetura do Sistema](docs/arquitetura.md)
 - [Requisitos e User Stories](docs/requisitos.md)
-- [Decisões Técnicas (ADRs)](docs/decisoes.md)
+- [Decisões Técnicas (ADRs)](docs/design)
 - [Manual do Usuário](docs/manual-usuario.md)
 - [Guia de Contribuição](CONTRIBUTING.md)
 - [Política de Segurança](SECURITY.md)

@@ -18,8 +18,8 @@
 
 ## Equipa
 
-| Nome | Papel principal | GitHub |
-|---|---|---|
+| Nome | GitHub |
+|---|---|
 | Douglas Pereira | [@Douglas-LP](https://github.com/Douglas-LP) |
 | Claudinei Feliz | [@Claudineifeliz](https://github.com/Claudineifeliz) |
 | Gleice Constâncio Rodrigues |[@geconstancio](https://github.com/geconstancio) |
@@ -49,8 +49,8 @@
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/geconstancio/C.O.S.git
-cd grupo-XX-gestao-os
+git clone https://github.com/web3-fatec-olimpia-2026-2/C.O.S.git
+cd C.O.S
 
 # 2. Crie e ative o ambiente virtual
 python -m venv venv

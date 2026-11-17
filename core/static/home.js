@@ -559,3 +559,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+const btnNovaOS = document.getElementById('btnNovaOS');
+const fundoPopup = document.getElementById('fundoPopup');
+const btnFecharPopup = document.getElementById('btnFecharPopup');
+
+if (btnNovaOS && fundoPopup) {
+    btnNovaOS.addEventListener('click', function () {
+        fundoPopup.classList.add('aberto');
+    });
+}
+
+if (btnFecharPopup && fundoPopup) {
+    btnFecharPopup.addEventListener('click', function () {
+        fundoPopup.classList.remove('aberto');
+    });
+}
+
+if (fundoPopup) {
+    fundoPopup.addEventListener('click', function (e) {
+        if (e.target === fundoPopup) {
+            fundoPopup.classList.remove('aberto');
+        }
+    });
+}

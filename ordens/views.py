@@ -4,10 +4,26 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 
 from .forms import OrdemForm, FotoOSForm
 from .models import OrdemServico
 from .selectors import ordens_visiveis_para
+
+
+def _verificar_acesso_ordens(request):
+    if request.user.perfil == 'PRESTADOR':
+        raise PermissionDenied('Prestadores não podem alterar ordens de serviço.')
+
+
+def _ordem_visivel_para(request, pk):
+    ordens = OrdemServico.objects.select_related('prestador').prefetch_related('fotos')
+    if request.user.perfil == 'ADMINISTRADOR':
+        return get_object_or_404(ordens, pk=pk)
+    if request.user.perfil == 'PRESTADOR':
+        return get_object_or_404(ordens.filter(prestador__usuario=request.user), pk=pk)
+    raise PermissionDenied('Acesso restrito a administradores e prestadores da ordem.')
+
 
 def _dados_ordem(ordem):
     return {
@@ -39,6 +55,7 @@ def listar_ordens(request):
 
 @login_required
 def criar_ordem(request):
+    _verificar_acesso_ordens(request)
     form = OrdemForm(request.POST or None)
     if form.is_valid():
         ordem = form.save()
@@ -66,6 +83,7 @@ def criar_ordem(request):
 
 @login_required
 def editar_ordem(request, pk):
+    _verificar_acesso_ordens(request)
     ordem = get_object_or_404(OrdemServico, pk=pk)
     if (
         request.method == 'GET'
@@ -112,7 +130,17 @@ def editar_ordem(request, pk):
 
 
 @login_required
+def detalhe_ordem(request, pk):
+    ordem = _ordem_visivel_para(request, pk)
+    return render(request, 'ordens/detalhe.html', {
+        'ordem': ordem,
+        'form': FotoOSForm(),
+    })
+
+
+@login_required
 def excluir_ordem(request, pk):
+    _verificar_acesso_ordens(request)
     ordem = get_object_or_404(OrdemServico, pk=pk)
 
     if request.method == "POST":
@@ -126,7 +154,7 @@ def excluir_ordem(request, pk):
 @login_required
 @require_POST
 def anexar_foto(request, pk):
-    ordem = get_object_or_404(OrdemServico, pk=pk)
+    ordem = _ordem_visivel_para(request, pk)
     form = FotoOSForm(request.POST, request.FILES)
 
     if form.is_valid():
@@ -143,19 +171,23 @@ def anexar_foto(request, pk):
                     'data_envio': timezone.localtime(foto.data_envio).strftime('%d/%m/%Y %H:%M'),
                 }
             })
-        return redirect('pagina_inicial')
+        return redirect('ordens:detalhe', pk=ordem.pk)
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(
             {'success': False, 'errors': form.errors.get_json_data()},
             status=400,
         )
-    return redirect('pagina_inicial')
+    return render(request, 'ordens/detalhe.html', {
+        'ordem': ordem,
+        'form': form,
+    }, status=400)
 
 
 @login_required
 @require_POST
 def apagar_os_htmx(request, pk):
+    _verificar_acesso_ordens(request)
     ordem = get_object_or_404(OrdemServico, pk=pk)
     ordem.delete()
     return HttpResponse(status=200)
@@ -166,7 +198,6 @@ def apagar_os_htmx(request, pk):
 # ============================================================
 from django.db.models import Q
 from django.core.paginator import Paginator
-from django.core.exceptions import PermissionDenied
 from usuarios.models import Prestador
 
 _CATEGORIA_CURTA = {

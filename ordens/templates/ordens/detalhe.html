@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O.S. {{ ordem.numero_OS }} | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=19">
+</head>
+
+<body class="pagina-principal">
+    <header class="cabecalho">
+        <div class="cabecalho-esq">
+            <img src="{% static 'logo.png' %}" alt="C.O.S" class="logo">
+            <span class="pagina-nome">Ordem de Serviço</span>
+        </div>
+        <div class="cabecalho-dir">
+            <a class="btn btn-principal" href="{% url 'pagina_inicial' %}">Voltar</a>
+        </div>
+    </header>
+
+    <main class="conteudo">
+        <section class="secao-ordens" aria-labelledby="titulo-ordem">
+            <div class="titulo-secao">
+                <div>
+                    <h2 id="titulo-ordem">O.S. {{ ordem.numero_OS }}</h2>
+                    <p>{{ ordem.descricao }}</p>
+                </div>
+            </div>
+
+            <div class="tabela-ordens-container">
+                <table class="tabela-ordens">
+                    <tbody>
+                        <tr><th scope="row">Status</th><td>{{ ordem.get_status_display }}</td></tr>
+                        <tr><th scope="row">Data prevista</th><td>{{ ordem.data_prevista|date:"d/m/Y" }}</td></tr>
+                        <tr><th scope="row">Categoria</th><td>{{ ordem.get_categoria_display }}</td></tr>
+                        <tr><th scope="row">Prioridade</th><td>{{ ordem.get_prioridade_display }}</td></tr>
+                        <tr><th scope="row">Endereço</th><td>{{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}</td></tr>
+                        <tr><th scope="row">Prestador</th><td>{{ ordem.prestador.nome|default:"Não atribuído" }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <section aria-labelledby="titulo-fotos">
+                <div class="titulo-secao">
+                    <div>
+                        <h2 id="titulo-fotos">Fotos do serviço</h2>
+                        <p>As fotos enviadas ficam disponíveis para conferência da administração.</p>
+                    </div>
+                </div>
+
+                {% for foto in ordem.fotos.all %}
+                <figure>
+                    <a href="{{ foto.imagem.url }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ foto.imagem.url }}" alt="Foto enviada para a O.S. {{ ordem.numero_OS }}"
+                            style="max-width: 100%; width: 220px; height: auto;">
+                    </a>
+                    <figcaption>Enviada em {{ foto.data_envio|date:"d/m/Y H:i" }}</figcaption>
+                </figure>
+                {% empty %}
+                <p>Nenhuma foto enviada para esta ordem.</p>
+                {% endfor %}
+
+                {% if request.user.perfil == 'PRESTADOR' %}
+                <form action="{% url 'ordens:anexar_foto' ordem.pk %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="grupo-form">
+                        <label for="{{ form.imagem.id_for_label }}">Enviar foto do serviço</label>
+                        {{ form.imagem }}
+                        {% for error in form.imagem.errors %}
+                        <span class="erro-form">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-principal">Enviar foto</button>
+                </form>
+                {% endif %}
+            </section>
+        </section>
+    </main>
+</body>
+
+</html>

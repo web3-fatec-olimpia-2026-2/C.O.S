@@ -312,12 +312,41 @@ class OrdemServicoTests(TestCase):
         self.assertContains(response, 'data-excluir')
         self.assertIn(ordem, response.context['ordens'])
 
+    def test_pagina_inicial_exibe_nome_do_prestador_e_endereco_sem_codigo_template(self):
+        prestador = Prestador.objects.create(
+            nome='Douglas Pereira',
+            documento='TESTE-PRESTADOR-EXIBICAO',
+            telefone='(17) 90000-0001',
+            email='douglas@example.com',
+        )
+        OrdemServico.objects.create(
+            data_prevista='2026-12-01',
+            descricao='Teste de exibição do prestador',
+            endereco='Rua Teste',
+            numero_endereco='123',
+            bairro='Centro',
+            prestador=prestador,
+        )
+
+        response = self.client.get(reverse('pagina_inicial'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Rua Teste, 123 - Centro')
+        self.assertContains(response, 'Douglas Pereira')
+        self.assertNotContains(response, '{{ ordem.')
+
     def test_pagina_inicial_exibe_nome_e_perfil_do_usuario(self):
+        self.user.first_name = 'Gleice'
+        self.user.last_name = 'Constâncio'
+        self.user.save(update_fields=['first_name', 'last_name'])
+
         response = self.client.get(reverse('pagina_inicial'))
 
         self.assertNotContains(response, 'perfil-resumo')
         self.assertContains(response, self.user.username)
         self.assertContains(response, self.user.get_perfil_display())
+        self.assertContains(response, '<span class="avatar-usuario" aria-hidden="true">GC</span>', html=True)
+        self.assertNotContains(response, '{{ usuario.last_name')
         self.assertContains(response, 'Entrar com outro ID')
         self.assertContains(response, 'Sair')
         self.assertNotContains(response, 'Você está logado com sucesso.')
@@ -496,10 +525,54 @@ class ControleAcessoListagemTests(TestCase):
 
         self.verificar_listagens(self.admin, ids_esperados)
 
-    def test_prestador_visualiza_somente_suas_ordens(self):
-        ids_esperados = {self.ordem_prestador.id}
+    def test_prestador_visualiza_somente_ordens_atribuidas_a_ele(self):
+        self.verificar_listagens(self.prestador_user, {self.ordem_prestador.id})
 
-        self.verificar_listagens(self.prestador_user, ids_esperados)
+    def test_prestador_pode_abrir_ordem_atribuida_e_nao_ve_acoes_de_edicao(self):
+        self.client.force_login(self.prestador_user)
+
+        response = self.client.get(reverse('pagina_inicial'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.ordem_prestador.descricao)
+        self.assertNotContains(response, self.ordem_outro_prestador.descricao)
+        self.assertNotContains(response, 'id="btnNovaOS"')
+        self.assertNotContains(response, 'data-editar')
+        self.assertNotContains(response, 'data-excluir')
+        self.assertNotContains(response, 'id="formNovaOrdem"')
+        self.assertContains(response, reverse('ordens:detalhe', args=[self.ordem_prestador.pk]))
+
+        detalhe = self.client.get(
+            reverse('ordens:detalhe', args=[self.ordem_prestador.pk])
+        )
+        self.assertEqual(detalhe.status_code, 200)
+        self.assertContains(detalhe, 'Enviar foto do serviço')
+        self.assertEqual(
+            self.client.get(
+                reverse('ordens:detalhe', args=[self.ordem_outro_prestador.pk])
+            ).status_code,
+            404,
+        )
+
+    def test_prestador_nao_pode_criar_editar_ou_excluir(self):
+        self.client.force_login(self.prestador_user)
+        url_editar = reverse('ordens:editar', args=[self.ordem_prestador.pk])
+        urls_post = [
+            reverse('ordens:criar'),
+            url_editar,
+            reverse('ordens:excluir', args=[self.ordem_prestador.pk]),
+            reverse('ordens:apagar_os_htmx', args=[self.ordem_prestador.pk]),
+        ]
+
+        self.assertEqual(self.client.get(url_editar).status_code, 403)
+        total_ordens = OrdemServico.objects.count()
+        for url in urls_post:
+            response = self.client.post(url, {'descricao': 'Tentativa indevida'})
+            self.assertEqual(response.status_code, 403, url)
+
+        self.assertEqual(OrdemServico.objects.count(), total_ordens)
+        self.ordem_prestador.refresh_from_db()
+        self.assertEqual(self.ordem_prestador.descricao, 'Ordem do prestador de teste')
 
     def test_usuario_comum_nao_visualiza_ordens(self):
         self.verificar_listagens(self.comum, set())
@@ -523,10 +596,15 @@ class ListarAdminTests(TestCase):
         )
 
     def test_admin_acessa_tela(self):
+        self.admin.first_name = 'Gleice'
+        self.admin.last_name = 'Constâncio'
+        self.admin.save(update_fields=['first_name', 'last_name'])
         self.client.force_login(self.admin)
         resposta = self.client.get(reverse('ordens:listar_admin'))
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, 'Ordens de Serviço')
+        self.assertContains(resposta, '<span class="avatar-usuario" aria-hidden="true">GC</span>', html=True)
+        self.assertNotContains(resposta, '{{ usuario.last_name')
         self.assertTemplateUsed(resposta, 'ordens/admin_lista.html')
 
     def test_prestador_bloqueado_com_403(self):
@@ -563,20 +641,30 @@ def gerar_imagem_teste(nome='comprovante.jpg', formato='JPEG'):
 
 @pytest.fixture
 def usuario(db):
-    return User.objects.create_user(
+    usuario = User.objects.create_user(
         username='dev_teste',
         password='SenhaForte123!',
+        perfil='PRESTADOR',
     )
+    Prestador.objects.create(
+        usuario=usuario,
+        nome='Prestador de Teste',
+        documento='TESTE-PRESTADOR-FOTOS',
+        telefone='(17) 90000-0001',
+        email='prestador_fotos@example.com',
+    )
+    return usuario
 
 
 @pytest.fixture
-def ordem(db):
+def ordem(db, usuario):
     return OrdemServico.objects.create(
         data_prevista=timezone.localdate(),
         descricao='Manutenção de semáforo',
         endereco='Av. Principal',
         numero_endereco='100',
         bairro='Centro',
+        prestador=Prestador.objects.get(usuario=usuario),
     )
 
 
@@ -661,7 +749,7 @@ def test_anexar_foto_upload_tradicional_sucesso(client, usuario, ordem):
     response = client.post(url, {'imagem': gerar_imagem_teste()})
 
     assert response.status_code == 302
-    assert response.url == reverse('pagina_inicial')
+    assert response.url == reverse('ordens:detalhe', args=[ordem.pk])
     assert ordem.fotos.count() == 1
 
 
@@ -710,6 +798,40 @@ def test_anexar_foto_ordem_inexistente_retorna_404(client, usuario):
     response = client.post(url, {'imagem': gerar_imagem_teste()})
     assert response.status_code == 404
 
+
+@pytest.mark.django_db
+def test_anexar_foto_bloqueia_ordem_de_outro_prestador(client, usuario):
+    outro_usuario = User.objects.create_user(
+        username='outro_prestador',
+        email='outro_prestador_fotos@example.com',
+        password='SenhaForte123!',
+        perfil='PRESTADOR',
+    )
+    outro_prestador = Prestador.objects.create(
+        usuario=outro_usuario,
+        nome='Outro Prestador',
+        documento='TESTE-OUTRO-PRESTADOR-FOTOS',
+        telefone='(17) 90000-0002',
+        email='outro_prestador_fotos@example.com',
+    )
+    outra_ordem = OrdemServico.objects.create(
+        data_prevista=timezone.localdate(),
+        descricao='Ordem de outro prestador',
+        endereco='Rua B',
+        numero_endereco='200',
+        bairro='Centro',
+        prestador=outro_prestador,
+    )
+    client.force_login(usuario)
+
+    response = client.post(
+        reverse('ordens:anexar_foto', args=[outra_ordem.pk]),
+        {'imagem': gerar_imagem_teste()},
+    )
+
+    assert response.status_code == 404
+    assert FotosOS.objects.count() == 0
+
 User = get_user_model()
 
 
@@ -728,20 +850,30 @@ def gerar_imagem_teste(nome='comprovante.jpg', formato='JPEG'):
 
 @pytest.fixture
 def usuario(db):
-    return User.objects.create_user(
+    usuario = User.objects.create_user(
         username='dev_teste',
         password='SenhaForte123!',
+        perfil='PRESTADOR',
     )
+    Prestador.objects.create(
+        usuario=usuario,
+        nome='Prestador de Teste',
+        documento='TESTE-PRESTADOR-FOTOS',
+        telefone='(17) 90000-0001',
+        email='prestador_fotos@example.com',
+    )
+    return usuario
 
 
 @pytest.fixture
-def ordem(db):
+def ordem(db, usuario):
     return OrdemServico.objects.create(
         data_prevista=timezone.localdate(),
         descricao='Manutenção de semáforo',
         endereco='Av. Principal',
         numero_endereco='100',
         bairro='Centro',
+        prestador=Prestador.objects.get(usuario=usuario),
     )
 
 
@@ -826,7 +958,7 @@ def test_anexar_foto_upload_tradicional_sucesso(client, usuario, ordem):
     response = client.post(url, {'imagem': gerar_imagem_teste()})
 
     assert response.status_code == 302
-    assert response.url == reverse('pagina_inicial')
+    assert response.url == reverse('ordens:detalhe', args=[ordem.pk])
     assert ordem.fotos.count() == 1
 
 

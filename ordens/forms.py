@@ -2,7 +2,7 @@ from django import forms
 from django.utils import timezone
 from usuarios.models import Prestador
 
-from .models import OrdemServico
+from .models import OrdemServico, FotosOS
 
 
 class OrdemForm (forms.ModelForm):
@@ -37,3 +37,11 @@ class OrdemForm (forms.ModelForm):
         if self.instance.pk and self.instance.data_prevista < data_minima:
             data_minima = self.instance.data_prevista
         self.fields['data_prevista'].widget.attrs['min'] = data_minima.isoformat()
+
+class FotoOSForm(forms.ModelForm):
+    class Meta:
+        model = FotosOS
+        fields = ['imagem']
+        widgets = {
+            'imagem': forms.ClearableFileInput(attrs={'accept': 'image/*'})
+        }

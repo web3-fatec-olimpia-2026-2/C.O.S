@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import OrdemForm
+from .forms import OrdemForm, FotoOSForm
 from .models import OrdemServico
 from .selectors import ordens_visiveis_para
 
@@ -123,13 +123,42 @@ def excluir_ordem(request, pk):
 
     return render(request, "ordens/confirmar_excluir.html", {"ordem": ordem})
 
+@login_required
+@require_POST
+def anexar_foto(request, pk):
+    ordem = get_object_or_404(OrdemServico, pk=pk)
+    form = FotoOSForm(request.POST, request.FILES)
+
+    if form.is_valid():
+        foto = form.save(commit=False)
+        foto.ordem = ordem
+        foto.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'foto': {
+                    'id': foto.pk,
+                    'url': foto.imagem.url,
+                    'data_envio': timezone.localtime(foto.data_envio).strftime('%d/%m/%Y %H:%M'),
+                }
+            })
+        return redirect('pagina_inicial')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(
+            {'success': False, 'errors': form.errors.get_json_data()},
+            status=400,
+        )
+    return redirect('pagina_inicial')
+
 
 @login_required
 @require_POST
 def apagar_os_htmx(request, pk):
     ordem = get_object_or_404(OrdemServico, pk=pk)
     ordem.delete()
-    return HttpResponse(status=204)
+    return HttpResponse(status=200)
 
 
 # ============================================================

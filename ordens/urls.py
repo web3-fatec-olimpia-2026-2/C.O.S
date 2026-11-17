@@ -10,4 +10,6 @@ urlpatterns = [
     path('<int:pk>/editar/', views.editar_ordem, name='editar'),
     path('<int:pk>/excluir/', views.excluir_ordem, name='excluir'),
     path('<int:pk>/apagar/', views.apagar_os_htmx, name='apagar_os_htmx'),
+    path('<int:pk>/anexar-foto/', views.anexar_foto, name='anexar_foto'),
+    
 ]

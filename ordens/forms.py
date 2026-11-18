@@ -1,3 +1,5 @@
+import os
+
 from django import forms
 from django.utils import timezone
 from usuarios.models import Prestador
@@ -38,10 +40,24 @@ class OrdemForm (forms.ModelForm):
             data_minima = self.instance.data_prevista
         self.fields['data_prevista'].widget.attrs['min'] = data_minima.isoformat()
 
+class _ImagemComNomeCurtoField(forms.ImageField):
+    max_nome_arquivo = 80
+
+    def to_python(self, data):
+        nome = getattr(data, 'name', None)
+        if isinstance(nome, str) and len(nome) > self.max_nome_arquivo:
+            base, extensao = os.path.splitext(nome)
+            extensao = extensao[-20:]
+            data.name = f'{base[:self.max_nome_arquivo - len(extensao)]}{extensao}'
+        return super().to_python(data)
+
+
 class FotoOSForm(forms.ModelForm):
+    imagem = _ImagemComNomeCurtoField(
+        max_length=100,
+        widget=forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+    )
+
     class Meta:
         model = FotosOS
         fields = ['imagem']
-        widgets = {
-            'imagem': forms.ClearableFileInput(attrs={'accept': 'image/*'})
-        }

@@ -71,6 +71,13 @@ class OrdemServico(models.Model):
         default=Status.ABERTA
     )
 
+    motivo_reprovacao = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Motivo da reprovação',
+        help_text='Preenchido pela administração ao devolver uma O.S. em análise para o prestador.'
+    )
+
     def clean(self):
         super().clean()
         if not self.data_prevista:
@@ -124,6 +131,11 @@ class OrdemServico(models.Model):
         return f"OS-{self.numero_OS}"
 
 class FotosOS(models.Model):
+
+    class Tipo(models.TextChoices):
+        ANTES = 'ANTES', 'Antes'
+        DEPOIS = 'DEPOIS', 'Depois'
+
     ordem = models.ForeignKey(
         OrdemServico,
         on_delete=models.CASCADE,
@@ -131,6 +143,12 @@ class FotosOS(models.Model):
     )
     imagem = models.ImageField(upload_to='comprovantes/')
     data_envio = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(
+        max_length=10,
+        choices=Tipo.choices,
+        default=Tipo.DEPOIS,
+        verbose_name='Tipo'
+    )
 
     def __str__(self):
         return f"Comprovante OS-{self.ordem.numero_OS} ({self.id})"

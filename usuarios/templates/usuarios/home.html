@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visão geral | C.O.S</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=18">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20">
 </head>
 
 <body class="pagina-principal">
@@ -15,7 +15,22 @@
     <header class="cabecalho">
         <div class="cabecalho-esq">
             <img src="{% static 'logo.png' %}" alt="C.O.S" class="logo">
-            <span class="pagina-nome">Visão geral</span>
+            <nav class="menu-navegacao" aria-label="Menus principais">
+                <span class="menu-navegacao-titulo">Menus</span>
+                <div class="menu-navegacao-links">
+                    <a href="{% url 'pagina_inicial' %}" class="menu-navegacao-link menu-navegacao-link--ativo"
+                        aria-current="page">
+                        <span class="menu-navegacao-casa" aria-hidden="true">⌂</span>
+                        Home
+                    </a>
+                    <span class="menu-navegacao-link menu-navegacao-link--indisponivel" aria-disabled="true">
+                        Relatórios <span class="menu-navegacao-tag">em breve</span>
+                    </span>
+                    <span class="menu-navegacao-link menu-navegacao-link--indisponivel" aria-disabled="true">
+                        Configurações <span class="menu-navegacao-tag">em breve</span>
+                    </span>
+                </div>
+            </nav>
         </div>
         <div class="cabecalho-dir">
             {% if request.user.perfil != 'PRESTADOR' %}
@@ -169,11 +184,6 @@
                     <h3>C.O.S — Controle de Ordens de Serviço</h3>
                     <p>Sistema de Gestão de Ordens de Serviço</p>
                 </div>
-            </div>
-            <div class="rodape-links">
-                <a href="#">Visão Geral</a>
-                <a href="#">Relatórios</a>
-                <a href="#">Configurações</a>
             </div>
         </div>
         <div class="rodape-inferior">

@@ -546,7 +546,9 @@ class ControleAcessoListagemTests(TestCase):
             reverse('ordens:detalhe', args=[self.ordem_prestador.pk])
         )
         self.assertEqual(detalhe.status_code, 200)
-        self.assertContains(detalhe, 'Enviar foto do serviço')
+        self.assertContains(detalhe, 'Enviar fotos do serviço')
+        self.assertContains(detalhe, 'Adicionar foto ANTES')
+        self.assertContains(detalhe, 'Adicionar foto DEPOIS')
         self.assertEqual(
             self.client.get(
                 reverse('ordens:detalhe', args=[self.ordem_outro_prestador.pk])
@@ -607,6 +609,53 @@ class ListarAdminTests(TestCase):
         self.assertNotContains(resposta, '{{ usuario.last_name')
         self.assertTemplateUsed(resposta, 'ordens/admin_lista.html')
 
+    def test_menu_principal_fica_no_cabecalho_com_home(self):
+        self.client.force_login(self.admin)
+
+        resposta = self.client.get(reverse('pagina_inicial'))
+
+        self.assertContains(resposta, 'Menus')
+        self.assertContains(resposta, 'Home')
+        self.assertContains(resposta, 'menu-navegacao-casa')
+        self.assertNotContains(resposta, '<span class="pagina-nome">Visão geral</span>', html=True)
+        self.assertNotContains(resposta, 'rodape-links')
+
+    def test_voltar_de_fotos_retorna_ao_painel_com_filtros(self):
+        self.client.force_login(self.admin)
+        ordem = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Teste painel retorno',
+            endereco='Rua das Flores',
+            numero_endereco='10',
+            bairro='Centro',
+        )
+
+        painel = self.client.get(reverse('ordens:listar_admin'), {'q': 'Teste painel'})
+        self.assertContains(
+            painel,
+            f'{reverse("ordens:detalhe", args=[ordem.pk])}?q=Teste+painel&amp;origem=admin&amp;pagina=1',
+        )
+
+        detalhe = self.client.get(
+            reverse('ordens:detalhe', args=[ordem.pk]),
+            {
+                'origem': 'admin',
+                'q': 'Teste painel',
+                'pagina': '1',
+                'next': 'https://example.com',
+            },
+        )
+
+        self.assertEqual(detalhe.status_code, 200)
+        self.assertEqual(
+            detalhe.context['voltar_url'],
+            f'{reverse("ordens:listar_admin")}?q=Teste+painel&pagina=1',
+        )
+        self.assertContains(
+            detalhe,
+            f'href="{reverse("ordens:listar_admin")}?q=Teste+painel&amp;pagina=1"',
+        )
+
     def test_prestador_bloqueado_com_403(self):
         self.client.force_login(self.prestador_user)
         resposta = self.client.get(reverse('ordens:listar_admin'))
@@ -623,6 +672,97 @@ class ListarAdminTests(TestCase):
             'q': 'faixa', 'status': 'ABERTA', 'prestador': '99',
         })
         self.assertEqual(resposta.status_code, 200)
+
+    def test_painel_resume_todos_os_status_e_aplica_filtro_de_prioridade(self):
+        self.client.force_login(self.admin)
+        estados = (
+            OrdemServico.Status.ABERTA,
+            OrdemServico.Status.EM_EXECUCAO,
+            OrdemServico.Status.EM_ANALISE,
+            OrdemServico.Status.CONCLUIDA,
+        )
+        for indice, estado in enumerate(estados):
+            OrdemServico.objects.create(
+                data_prevista=timezone.localdate(),
+                descricao=f'Ordem de teste {indice}',
+                endereco='Rua das Flores',
+                numero_endereco=str(indice + 1),
+                bairro='Centro',
+                prioridade=(
+                    OrdemServico.Prioridade.ALTA
+                    if indice == 0
+                    else OrdemServico.Prioridade.NORMAL
+                ),
+                status=estado,
+            )
+
+        resposta = self.client.get(reverse('ordens:listar_admin'), {
+            'status': OrdemServico.Status.ABERTA,
+            'prioridade': OrdemServico.Prioridade.ALTA,
+        })
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context['total'], 1)
+        self.assertEqual(resposta.context['metricas']['total'], 1)
+        self.assertEqual(resposta.context['metricas']['aberta'], 1)
+        self.assertEqual(resposta.context['metricas']['execucao'], 0)
+        self.assertEqual(resposta.context['metricas']['analise'], 0)
+        self.assertEqual(resposta.context['metricas']['concluida'], 0)
+        self.assertEqual(len(resposta.context['dias_semana']), 7)
+        self.assertEqual(resposta.context['total_semana'], 1)
+        self.assertEqual(resposta.context['status_chart']['analise_fim'], 100)
+        self.assertContains(resposta, 'Todas as prioridades')
+
+    def test_cards_e_barras_filtram_o_painel_em_conjunto(self):
+        self.client.force_login(self.admin)
+        estados = (
+            OrdemServico.Status.ABERTA,
+            OrdemServico.Status.EM_EXECUCAO,
+            OrdemServico.Status.EM_ANALISE,
+            OrdemServico.Status.CONCLUIDA,
+        )
+        for indice, estado in enumerate(estados):
+            OrdemServico.objects.create(
+                data_prevista=timezone.localdate(),
+                descricao=f'Ordem interativa {indice}',
+                endereco='Rua das Flores',
+                numero_endereco=str(indice + 1),
+                bairro='Centro',
+                status=estado,
+            )
+
+        inicial = self.client.get(reverse('ordens:listar_admin'))
+        card_abertas = next(
+            card for card in inicial.context['status_cards']
+            if card['chave'] == 'aberta'
+        )
+        self.assertEqual(
+            card_abertas['url'],
+            f'{reverse("ordens:listar_admin")}?status=ABERTA',
+        )
+
+        filtrado_status = self.client.get(card_abertas['url'])
+        self.assertEqual(filtrado_status.context['total'], 1)
+        self.assertEqual(filtrado_status.context['metricas']['aberta'], 1)
+        self.assertEqual(filtrado_status.context['metricas']['execucao'], 0)
+
+        barra_hoje = next(
+            dia for dia in filtrado_status.context['dias_semana']
+            if dia['iso'] == timezone.localdate().isoformat()
+        )
+        filtrado_dia = self.client.get(barra_hoje['url'])
+        self.assertEqual(filtrado_dia.context['total'], 1)
+        self.assertTrue(
+            next(
+                dia for dia in filtrado_dia.context['dias_semana']
+                if dia['iso'] == timezone.localdate().isoformat()
+            )['selecionado']
+        )
+        ordem = OrdemServico.objects.get(status=OrdemServico.Status.ABERTA)
+        self.assertContains(
+            filtrado_dia,
+            f'href="{reverse("ordens:detalhe", args=[ordem.pk])}?status=ABERTA&amp;dia={timezone.localdate().isoformat()}&amp;origem=admin&amp;pagina=1"',
+        )
 User = get_user_model()
 
 
@@ -707,6 +847,13 @@ def test_foto_form_valido():
     form = FotoOSForm(data={}, files={'imagem': arquivo})
     assert form.is_valid()
 
+def test_foto_form_aceita_nome_de_arquivo_longo():
+    arquivo = gerar_imagem_teste(nome=f"{'foto_' * 25}.jpg")
+    form = FotoOSForm(data={}, files={'imagem': arquivo})
+
+    assert form.is_valid(), form.errors
+    assert len(form.cleaned_data['imagem'].name) <= 80
+
 
 def test_foto_form_invalido_com_arquivo_nao_imagem():
     arquivo_txt = SimpleUploadedFile(
@@ -751,6 +898,23 @@ def test_anexar_foto_upload_tradicional_sucesso(client, usuario, ordem):
     assert response.status_code == 302
     assert response.url == reverse('ordens:detalhe', args=[ordem.pk])
     assert ordem.fotos.count() == 1
+
+
+@pytest.mark.django_db
+def test_anexar_foto_aceita_nome_de_arquivo_longo(client, usuario, ordem):
+    client.force_login(usuario)
+    arquivo = gerar_imagem_teste(nome=f"{'foto_' * 25}.jpg")
+
+    response = client.post(
+        reverse('ordens:anexar_foto', args=[ordem.pk]),
+        {'imagem': arquivo, 'tipo': FotosOS.Tipo.ANTES},
+    )
+
+    assert response.status_code == 302
+    foto = ordem.fotos.get()
+    assert foto.tipo == FotosOS.Tipo.ANTES
+    assert len(foto.imagem.name) <= 100
+    assert foto.imagem.storage.exists(foto.imagem.name)
 
 
 @pytest.mark.django_db

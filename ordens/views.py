@@ -235,3 +235,53 @@ def listar_ordens_admin(request):
         'query_base': query_base,
         'total': paginador.count,
     })
+# ============================================================
+# Fluxo de execução da Ordem de Serviço (PRESTADOR)
+# ============================================================
+
+@login_required
+@require_POST
+def iniciar_servico(request, pk):
+    """Permite ao prestador responsável iniciar uma O.S. aberta."""
+
+    if request.user.perfil != 'PRESTADOR':
+        raise PermissionDenied('Ação permitida somente para prestadores.')
+
+    ordem = get_object_or_404(
+        OrdemServico,
+        pk=pk,
+        prestador__usuario=request.user,
+        prestador__status=True,
+    )
+
+    if ordem.status != OrdemServico.Status.ABERTA:
+        return HttpResponse(status=400)
+
+    ordem.status = OrdemServico.Status.EM_EXECUCAO
+    ordem.save(update_fields=['status'])
+
+    return redirect('ordens:listar')
+
+
+@login_required
+@require_POST
+def finalizar_servico(request, pk):
+    """Encaminha a O.S. em execução para análise administrativa."""
+
+    if request.user.perfil != 'PRESTADOR':
+        raise PermissionDenied('Ação permitida somente para prestadores.')
+
+    ordem = get_object_or_404(
+        OrdemServico,
+        pk=pk,
+        prestador__usuario=request.user,
+        prestador__status=True,
+    )
+
+    if ordem.status != OrdemServico.Status.EM_EXECUCAO:
+        return HttpResponse(status=400)
+
+    ordem.status = OrdemServico.Status.EM_ANALISE
+    ordem.save(update_fields=['status'])
+
+    return redirect('ordens:listar')

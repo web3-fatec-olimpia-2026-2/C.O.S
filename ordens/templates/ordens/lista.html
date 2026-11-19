@@ -17,7 +17,9 @@
 
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <h1>Ordens de Serviço</h1>
+    {% if request.user.perfil != 'PRESTADOR' %}
     <a href="{% url 'ordens:criar' %}">Criar Nova O.S.</a>
+    {% endif %}
 
     <table border="1" style="margin-top: 20px;">
         <thead>
@@ -51,6 +53,9 @@
                 </td>
                 <td>
                     <div class="acoes">
+                        {% if request.user.perfil == 'PRESTADOR' %}
+                        <a href="{% url 'ordens:detalhe' ordem.pk %}">Abrir</a>
+                        {% else %}
                         <a href="{% url 'ordens:editar' ordem.pk %}">Editar</a>
                         
                         <form 
@@ -63,6 +68,7 @@
                             {% csrf_token %}
                             <button type="submit">Excluir</button>
                         </form>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

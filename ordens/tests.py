@@ -312,12 +312,41 @@ class OrdemServicoTests(TestCase):
         self.assertContains(response, 'data-excluir')
         self.assertIn(ordem, response.context['ordens'])
 
+    def test_pagina_inicial_exibe_nome_do_prestador_e_endereco_sem_codigo_template(self):
+        prestador = Prestador.objects.create(
+            nome='Douglas Pereira',
+            documento='TESTE-PRESTADOR-EXIBICAO',
+            telefone='(17) 90000-0001',
+            email='douglas@example.com',
+        )
+        OrdemServico.objects.create(
+            data_prevista='2026-12-01',
+            descricao='Teste de exibição do prestador',
+            endereco='Rua Teste',
+            numero_endereco='123',
+            bairro='Centro',
+            prestador=prestador,
+        )
+
+        response = self.client.get(reverse('pagina_inicial'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Rua Teste, 123 - Centro')
+        self.assertContains(response, 'Douglas Pereira')
+        self.assertNotContains(response, '{{ ordem.')
+
     def test_pagina_inicial_exibe_nome_e_perfil_do_usuario(self):
+        self.user.first_name = 'Gleice'
+        self.user.last_name = 'Constâncio'
+        self.user.save(update_fields=['first_name', 'last_name'])
+
         response = self.client.get(reverse('pagina_inicial'))
 
         self.assertNotContains(response, 'perfil-resumo')
         self.assertContains(response, self.user.username)
         self.assertContains(response, self.user.get_perfil_display())
+        self.assertContains(response, '<span class="avatar-usuario" aria-hidden="true">GC</span>', html=True)
+        self.assertNotContains(response, '{{ usuario.last_name')
         self.assertContains(response, 'Entrar com outro ID')
         self.assertContains(response, 'Sair')
         self.assertNotContains(response, 'Você está logado com sucesso.')
@@ -496,10 +525,56 @@ class ControleAcessoListagemTests(TestCase):
 
         self.verificar_listagens(self.admin, ids_esperados)
 
-    def test_prestador_visualiza_somente_suas_ordens(self):
-        ids_esperados = {self.ordem_prestador.id}
+    def test_prestador_visualiza_somente_ordens_atribuidas_a_ele(self):
+        self.verificar_listagens(self.prestador_user, {self.ordem_prestador.id})
 
-        self.verificar_listagens(self.prestador_user, ids_esperados)
+    def test_prestador_pode_abrir_ordem_atribuida_e_nao_ve_acoes_de_edicao(self):
+        self.client.force_login(self.prestador_user)
+
+        response = self.client.get(reverse('pagina_inicial'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.ordem_prestador.descricao)
+        self.assertNotContains(response, self.ordem_outro_prestador.descricao)
+        self.assertNotContains(response, 'id="btnNovaOS"')
+        self.assertNotContains(response, 'data-editar')
+        self.assertNotContains(response, 'data-excluir')
+        self.assertNotContains(response, 'id="formNovaOrdem"')
+        self.assertContains(response, reverse('ordens:detalhe', args=[self.ordem_prestador.pk]))
+
+        detalhe = self.client.get(
+            reverse('ordens:detalhe', args=[self.ordem_prestador.pk])
+        )
+        self.assertEqual(detalhe.status_code, 200)
+        self.assertContains(detalhe, 'Enviar fotos do serviço')
+        self.assertContains(detalhe, 'Adicionar foto ANTES')
+        self.assertContains(detalhe, 'Adicionar foto DEPOIS')
+        self.assertEqual(
+            self.client.get(
+                reverse('ordens:detalhe', args=[self.ordem_outro_prestador.pk])
+            ).status_code,
+            404,
+        )
+
+    def test_prestador_nao_pode_criar_editar_ou_excluir(self):
+        self.client.force_login(self.prestador_user)
+        url_editar = reverse('ordens:editar', args=[self.ordem_prestador.pk])
+        urls_post = [
+            reverse('ordens:criar'),
+            url_editar,
+            reverse('ordens:excluir', args=[self.ordem_prestador.pk]),
+            reverse('ordens:apagar_os_htmx', args=[self.ordem_prestador.pk]),
+        ]
+
+        self.assertEqual(self.client.get(url_editar).status_code, 403)
+        total_ordens = OrdemServico.objects.count()
+        for url in urls_post:
+            response = self.client.post(url, {'descricao': 'Tentativa indevida'})
+            self.assertEqual(response.status_code, 403, url)
+
+        self.assertEqual(OrdemServico.objects.count(), total_ordens)
+        self.ordem_prestador.refresh_from_db()
+        self.assertEqual(self.ordem_prestador.descricao, 'Ordem do prestador de teste')
 
     def test_usuario_comum_nao_visualiza_ordens(self):
         self.verificar_listagens(self.comum, set())
@@ -523,11 +598,63 @@ class ListarAdminTests(TestCase):
         )
 
     def test_admin_acessa_tela(self):
+        self.admin.first_name = 'Gleice'
+        self.admin.last_name = 'Constâncio'
+        self.admin.save(update_fields=['first_name', 'last_name'])
         self.client.force_login(self.admin)
         resposta = self.client.get(reverse('ordens:listar_admin'))
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, 'Ordens de Serviço')
+        self.assertContains(resposta, '<span class="avatar-usuario" aria-hidden="true">GC</span>', html=True)
+        self.assertNotContains(resposta, '{{ usuario.last_name')
         self.assertTemplateUsed(resposta, 'ordens/admin_lista.html')
+
+    def test_menu_principal_fica_no_cabecalho_com_home(self):
+        self.client.force_login(self.admin)
+
+        resposta = self.client.get(reverse('pagina_inicial'))
+
+        self.assertContains(resposta, 'Menus')
+        self.assertContains(resposta, 'Home')
+        self.assertContains(resposta, 'menu-navegacao-casa')
+        self.assertNotContains(resposta, '<span class="pagina-nome">Visão geral</span>', html=True)
+        self.assertNotContains(resposta, 'rodape-links')
+
+    def test_voltar_de_fotos_retorna_ao_painel_com_filtros(self):
+        self.client.force_login(self.admin)
+        ordem = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Teste painel retorno',
+            endereco='Rua das Flores',
+            numero_endereco='10',
+            bairro='Centro',
+        )
+
+        painel = self.client.get(reverse('ordens:listar_admin'), {'q': 'Teste painel'})
+        self.assertContains(
+            painel,
+            f'{reverse("ordens:detalhe", args=[ordem.pk])}?q=Teste+painel&amp;origem=admin&amp;pagina=1',
+        )
+
+        detalhe = self.client.get(
+            reverse('ordens:detalhe', args=[ordem.pk]),
+            {
+                'origem': 'admin',
+                'q': 'Teste painel',
+                'pagina': '1',
+                'next': 'https://example.com',
+            },
+        )
+
+        self.assertEqual(detalhe.status_code, 200)
+        self.assertEqual(
+            detalhe.context['voltar_url'],
+            f'{reverse("ordens:listar_admin")}?q=Teste+painel&pagina=1',
+        )
+        self.assertContains(
+            detalhe,
+            f'href="{reverse("ordens:listar_admin")}?q=Teste+painel&amp;pagina=1"',
+        )
 
     def test_prestador_bloqueado_com_403(self):
         self.client.force_login(self.prestador_user)
@@ -545,6 +672,97 @@ class ListarAdminTests(TestCase):
             'q': 'faixa', 'status': 'ABERTA', 'prestador': '99',
         })
         self.assertEqual(resposta.status_code, 200)
+
+    def test_painel_resume_todos_os_status_e_aplica_filtro_de_prioridade(self):
+        self.client.force_login(self.admin)
+        estados = (
+            OrdemServico.Status.ABERTA,
+            OrdemServico.Status.EM_EXECUCAO,
+            OrdemServico.Status.EM_ANALISE,
+            OrdemServico.Status.CONCLUIDA,
+        )
+        for indice, estado in enumerate(estados):
+            OrdemServico.objects.create(
+                data_prevista=timezone.localdate(),
+                descricao=f'Ordem de teste {indice}',
+                endereco='Rua das Flores',
+                numero_endereco=str(indice + 1),
+                bairro='Centro',
+                prioridade=(
+                    OrdemServico.Prioridade.ALTA
+                    if indice == 0
+                    else OrdemServico.Prioridade.NORMAL
+                ),
+                status=estado,
+            )
+
+        resposta = self.client.get(reverse('ordens:listar_admin'), {
+            'status': OrdemServico.Status.ABERTA,
+            'prioridade': OrdemServico.Prioridade.ALTA,
+        })
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context['total'], 1)
+        self.assertEqual(resposta.context['metricas']['total'], 1)
+        self.assertEqual(resposta.context['metricas']['aberta'], 1)
+        self.assertEqual(resposta.context['metricas']['execucao'], 0)
+        self.assertEqual(resposta.context['metricas']['analise'], 0)
+        self.assertEqual(resposta.context['metricas']['concluida'], 0)
+        self.assertEqual(len(resposta.context['dias_semana']), 7)
+        self.assertEqual(resposta.context['total_semana'], 1)
+        self.assertEqual(resposta.context['status_chart']['analise_fim'], 100)
+        self.assertContains(resposta, 'Todas as prioridades')
+
+    def test_cards_e_barras_filtram_o_painel_em_conjunto(self):
+        self.client.force_login(self.admin)
+        estados = (
+            OrdemServico.Status.ABERTA,
+            OrdemServico.Status.EM_EXECUCAO,
+            OrdemServico.Status.EM_ANALISE,
+            OrdemServico.Status.CONCLUIDA,
+        )
+        for indice, estado in enumerate(estados):
+            OrdemServico.objects.create(
+                data_prevista=timezone.localdate(),
+                descricao=f'Ordem interativa {indice}',
+                endereco='Rua das Flores',
+                numero_endereco=str(indice + 1),
+                bairro='Centro',
+                status=estado,
+            )
+
+        inicial = self.client.get(reverse('ordens:listar_admin'))
+        card_abertas = next(
+            card for card in inicial.context['status_cards']
+            if card['chave'] == 'aberta'
+        )
+        self.assertEqual(
+            card_abertas['url'],
+            f'{reverse("ordens:listar_admin")}?status=ABERTA',
+        )
+
+        filtrado_status = self.client.get(card_abertas['url'])
+        self.assertEqual(filtrado_status.context['total'], 1)
+        self.assertEqual(filtrado_status.context['metricas']['aberta'], 1)
+        self.assertEqual(filtrado_status.context['metricas']['execucao'], 0)
+
+        barra_hoje = next(
+            dia for dia in filtrado_status.context['dias_semana']
+            if dia['iso'] == timezone.localdate().isoformat()
+        )
+        filtrado_dia = self.client.get(barra_hoje['url'])
+        self.assertEqual(filtrado_dia.context['total'], 1)
+        self.assertTrue(
+            next(
+                dia for dia in filtrado_dia.context['dias_semana']
+                if dia['iso'] == timezone.localdate().isoformat()
+            )['selecionado']
+        )
+        ordem = OrdemServico.objects.get(status=OrdemServico.Status.ABERTA)
+        self.assertContains(
+            filtrado_dia,
+            f'href="{reverse("ordens:detalhe", args=[ordem.pk])}?status=ABERTA&amp;dia={timezone.localdate().isoformat()}&amp;origem=admin&amp;pagina=1"',
+        )
 User = get_user_model()
 
 
@@ -563,20 +781,30 @@ def gerar_imagem_teste(nome='comprovante.jpg', formato='JPEG'):
 
 @pytest.fixture
 def usuario(db):
-    return User.objects.create_user(
+    usuario = User.objects.create_user(
         username='dev_teste',
         password='SenhaForte123!',
+        perfil='PRESTADOR',
     )
+    Prestador.objects.create(
+        usuario=usuario,
+        nome='Prestador de Teste',
+        documento='TESTE-PRESTADOR-FOTOS',
+        telefone='(17) 90000-0001',
+        email='prestador_fotos@example.com',
+    )
+    return usuario
 
 
 @pytest.fixture
-def ordem(db):
+def ordem(db, usuario):
     return OrdemServico.objects.create(
         data_prevista=timezone.localdate(),
         descricao='Manutenção de semáforo',
         endereco='Av. Principal',
         numero_endereco='100',
         bairro='Centro',
+        prestador=Prestador.objects.get(usuario=usuario),
     )
 
 
@@ -617,6 +845,13 @@ def test_foto_form_valido():
     arquivo = gerar_imagem_teste()
     form = FotoOSForm(data={}, files={'imagem': arquivo})
     assert form.is_valid()
+
+def test_foto_form_aceita_nome_de_arquivo_longo():
+    arquivo = gerar_imagem_teste(nome=f"{'foto_' * 25}.jpg")
+    form = FotoOSForm(data={}, files={'imagem': arquivo})
+
+    assert form.is_valid(), form.errors
+    assert len(form.cleaned_data['imagem'].name) <= 80
 
 
 def test_foto_form_invalido_com_arquivo_nao_imagem():
@@ -659,8 +894,25 @@ def test_anexar_foto_upload_tradicional_sucesso(client, usuario, ordem):
     response = client.post(url, {'imagem': gerar_imagem_teste()})
 
     assert response.status_code == 302
-    assert response.url == reverse('pagina_inicial')
+    assert response.url == reverse('ordens:detalhe', args=[ordem.pk])
     assert ordem.fotos.count() == 1
+
+
+@pytest.mark.django_db
+def test_anexar_foto_aceita_nome_de_arquivo_longo(client, usuario, ordem):
+    client.force_login(usuario)
+    arquivo = gerar_imagem_teste(nome=f"{'foto_' * 25}.jpg")
+
+    response = client.post(
+        reverse('ordens:anexar_foto', args=[ordem.pk]),
+        {'imagem': arquivo, 'tipo': FotosOS.Tipo.ANTES},
+    )
+
+    assert response.status_code == 302
+    foto = ordem.fotos.get()
+    assert foto.tipo == FotosOS.Tipo.ANTES
+    assert len(foto.imagem.name) <= 100
+    assert foto.imagem.storage.exists(foto.imagem.name)
 
 
 @pytest.mark.django_db
@@ -708,6 +960,40 @@ def test_anexar_foto_ordem_inexistente_retorna_404(client, usuario):
     response = client.post(url, {'imagem': gerar_imagem_teste()})
     assert response.status_code == 404
 
+
+@pytest.mark.django_db
+def test_anexar_foto_bloqueia_ordem_de_outro_prestador(client, usuario):
+    outro_usuario = User.objects.create_user(
+        username='outro_prestador',
+        email='outro_prestador_fotos@example.com',
+        password='SenhaForte123!',
+        perfil='PRESTADOR',
+    )
+    outro_prestador = Prestador.objects.create(
+        usuario=outro_usuario,
+        nome='Outro Prestador',
+        documento='TESTE-OUTRO-PRESTADOR-FOTOS',
+        telefone='(17) 90000-0002',
+        email='outro_prestador_fotos@example.com',
+    )
+    outra_ordem = OrdemServico.objects.create(
+        data_prevista=timezone.localdate(),
+        descricao='Ordem de outro prestador',
+        endereco='Rua B',
+        numero_endereco='200',
+        bairro='Centro',
+        prestador=outro_prestador,
+    )
+    client.force_login(usuario)
+
+    response = client.post(
+        reverse('ordens:anexar_foto', args=[outra_ordem.pk]),
+        {'imagem': gerar_imagem_teste()},
+    )
+
+    assert response.status_code == 404
+    assert FotosOS.objects.count() == 0
+
 User = get_user_model()
 
 
@@ -726,20 +1012,30 @@ def gerar_imagem_teste(nome='comprovante.jpg', formato='JPEG'):
 
 @pytest.fixture
 def usuario(db):
-    return User.objects.create_user(
+    usuario = User.objects.create_user(
         username='dev_teste',
         password='SenhaForte123!',
+        perfil='PRESTADOR',
     )
+    Prestador.objects.create(
+        usuario=usuario,
+        nome='Prestador de Teste',
+        documento='TESTE-PRESTADOR-FOTOS',
+        telefone='(17) 90000-0001',
+        email='prestador_fotos@example.com',
+    )
+    return usuario
 
 
 @pytest.fixture
-def ordem(db):
+def ordem(db, usuario):
     return OrdemServico.objects.create(
         data_prevista=timezone.localdate(),
         descricao='Manutenção de semáforo',
         endereco='Av. Principal',
         numero_endereco='100',
         bairro='Centro',
+        prestador=Prestador.objects.get(usuario=usuario),
     )
 
 
@@ -824,7 +1120,7 @@ def test_anexar_foto_upload_tradicional_sucesso(client, usuario, ordem):
     response = client.post(url, {'imagem': gerar_imagem_teste()})
 
     assert response.status_code == 302
-    assert response.url == reverse('pagina_inicial')
+    assert response.url == reverse('ordens:detalhe', args=[ordem.pk])
     assert ordem.fotos.count() == 1
 
 
@@ -941,6 +1237,18 @@ class FluxoExecucaoPrestadorTests(TestCase):
     def test_prestador_encaminha_ordem_para_analise(self):
         self.ordem.status = OrdemServico.Status.EM_EXECUCAO
         self.ordem.save()
+
+        FotosOS.objects.create(
+            ordem=self.ordem,
+            imagem='comprovantes/teste_antes.jpg',
+            tipo=FotosOS.Tipo.ANTES,
+        )
+
+        FotosOS.objects.create(
+            ordem=self.ordem,
+            imagem='comprovantes/teste_depois.jpg',
+            tipo=FotosOS.Tipo.DEPOIS,
+        )
 
         self.client.force_login(self.usuario_prestador)
 

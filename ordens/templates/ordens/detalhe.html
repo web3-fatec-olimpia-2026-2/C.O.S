@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O.S. {{ ordem.numero_OS }} | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=19">
+    <style>
+        /* Tela de detalhe da O.S. — fotos Antes/Depois + aprovação admin */
+        .cos-detalhe { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+        .cos-msg { padding: .85rem 1.1rem; border-radius: 12px; margin-bottom: 1rem; font-size: .92rem; font-weight: 600; border: 1px solid transparent; }
+        .cos-msg--sucesso { background: #e7f5dc; color: #2f5d17; border-color: #c9e8b0; }
+        .cos-msg--erro { background: #fde8e8; color: #991b1b; border-color: #f5c2c2; }
+        .cos-msg--info { background: #e3eef7; color: #0A3051; border-color: #bcd3e6; }
+
+        .cos-hero { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 1.4rem 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); }
+        .cos-hero-top { display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+        .cos-num-os { background: var(--azul-marinho); color: #fff; font-weight: 800; font-size: .95rem; padding: .4rem .85rem; border-radius: 9px; letter-spacing: .5px; }
+        .cos-hero h1 { font-size: 1.25rem; color: var(--azul-marinho); font-weight: 700; margin: .1rem 0 .25rem; }
+        .cos-endereco { color: var(--azul-acinzentado); font-size: .92rem; }
+        .cos-status-pill { margin-left: auto; padding: .4rem 1rem; border-radius: 999px; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+        .cos-status--aberta { background: #e3eef7; color: #0A3051; }
+        .cos-status--execucao { background: #fdf0dc; color: #8a5400; }
+        .cos-status--analise { background: #e8e0f7; color: #5b3fa0; }
+        .cos-status--concluida { background: #e7f5dc; color: #35651b; }
+
+        .cos-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-top: 1.1rem; }
+        .cos-meta-item { background: var(--branco-gelo); border: 1px solid var(--borda); border-radius: 12px; padding: .7rem .9rem; }
+        .cos-meta-item .cos-lbl { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--azul-acinzentado); font-weight: 700; margin-bottom: .2rem; }
+        .cos-meta-item .cos-val { font-size: .92rem; font-weight: 600; color: var(--texto); }
+
+        .cos-banner { border-radius: 12px; padding: .9rem 1.1rem; margin-bottom: 1.25rem; font-size: .92rem; font-weight: 600; display: flex; gap: .6rem; align-items: flex-start; }
+        .cos-banner--info { background: #e3eef7; color: #0A3051; border: 1px solid #bcd3e6; }
+        .cos-banner--ok { background: #e7f5dc; color: #2f5d17; border: 1px solid #c9e8b0; }
+        .cos-banner--alerta { background: #fde8e8; color: #991b1b; border: 1px solid #f5c2c2; }
+        .cos-banner strong { display: block; margin-bottom: .15rem; }
+
+        .cos-fotos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+        .cos-col-foto { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 1.2rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); }
+        .cos-col-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .3rem; }
+        .cos-col-head h2 { font-size: 1rem; color: var(--azul-marinho); font-weight: 700; }
+        .cos-tag { font-size: .68rem; padding: .25rem .6rem; border-radius: 7px; font-weight: 800; letter-spacing: .5px; }
+        .cos-tag--antes { background: #fdf0dc; color: #8a5400; }
+        .cos-tag--depois { background: #e7f5dc; color: #35651b; }
+        .cos-qtd { margin-left: auto; font-size: .78rem; color: var(--azul-acinzentado); font-weight: 700; }
+        .cos-col-ajuda { font-size: .82rem; color: var(--azul-acinzentado); margin-bottom: .9rem; line-height: 1.45; }
+
+        .cos-mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+        .cos-mini { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 1; background: var(--branco-gelo); border: 1px solid var(--borda); display: block; }
+        .cos-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cos-mini .cos-hora { position: absolute; left: 4px; bottom: 4px; background: rgba(10,48,81,.78); color: #fff; font-size: .62rem; font-weight: 700; padding: .12rem .4rem; border-radius: 5px; }
+        .cos-vazio { grid-column: 1 / -1; border: 2px dashed var(--borda); border-radius: 10px; padding: 1.4rem .8rem; text-align: center; color: var(--azul-acinzentado); font-size: .82rem; font-weight: 600; }
+
+        .cos-upload { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 1.2rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); }
+        .cos-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .cos-dropzone { display: block; border: 2px dashed var(--verde-lima); background: #f4faea; border-radius: 12px; padding: 1.3rem 1rem; text-align: center; cursor: pointer; transition: background .15s; margin-bottom: .7rem; }
+        .cos-dropzone:hover { background: #e9f7d8; }
+        .cos-dropzone .cos-cam { font-size: 1.7rem; margin-bottom: .3rem; }
+        .cos-dropzone .cos-txt { font-size: .9rem; font-weight: 700; color: #35651b; }
+        .cos-dropzone .cos-sub { font-size: .75rem; color: var(--azul-acinzentado); margin-top: .2rem; }
+        .cos-dropzone input[type=file] { display: none; }
+        .cos-btn { display: inline-block; border: none; border-radius: 10px; padding: .7rem 1.2rem; font-size: .9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+        .cos-btn:disabled { opacity: .45; cursor: not-allowed; }
+        .cos-btn--primario { background: var(--azul-marinho); color: #fff; }
+        .cos-btn--verde { background: var(--verde-lima); color: #0A3051; }
+        .cos-btn--vermelho { background: #dc2626; color: #fff; }
+        .cos-btn--block { display: block; width: 100%; text-align: center; }
+
+        .cos-envio-aprovacao { background: linear-gradient(135deg, var(--azul-marinho), #144a77); border-radius: 16px; padding: 1.3rem 1.4rem; color: #fff; margin-bottom: 1.25rem; box-shadow: 0 6px 18px rgba(10,48,81,.28); }
+        .cos-envio-aprovacao h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: .3rem; }
+        .cos-envio-aprovacao p { font-size: .84rem; color: #b9d0de; margin-bottom: .9rem; line-height: 1.45; }
+        .cos-envio-aprovacao .cos-btn--verde { font-size: 1rem; padding: .9rem 1.2rem; }
+
+        .cos-aprovacao-admin { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 1.3rem 1.4rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); border-top: 4px solid var(--verde-lima); }
+        .cos-aprovacao-admin h2 { font-size: 1.05rem; color: var(--azul-marinho); font-weight: 700; margin-bottom: .25rem; }
+        .cos-aprovacao-admin > p { font-size: .84rem; color: var(--azul-acinzentado); margin-bottom: 1rem; }
+        .cos-decisao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .cos-decisao { border: 1px solid var(--borda); border-radius: 12px; padding: 1rem; }
+        .cos-decisao h3 { font-size: .92rem; font-weight: 700; margin-bottom: .6rem; }
+        .cos-decisao--aprovar h3 { color: #35651b; }
+        .cos-decisao--reprovar h3 { color: #991b1b; }
+        .cos-decisao textarea { width: 100%; min-height: 84px; border: 1.5px solid var(--borda); border-radius: 9px; padding: .6rem .75rem; font-size: .88rem; font-family: inherit; resize: vertical; margin-bottom: .7rem; }
+        .cos-decisao textarea:focus { outline: none; border-color: var(--azul-marinho); }
+
+        .cos-erro { color: #991b1b; font-size: .82rem; font-weight: 600; margin-top: .4rem; }
+
+        @media (max-width: 780px) {
+            .cos-meta { grid-template-columns: 1fr 1fr; }
+            .cos-fotos-grid, .cos-upload-grid, .cos-decisao-grid { grid-template-columns: 1fr; }
+            .cos-status-pill { margin-left: 0; }
+        }
+    </style>
+</head>
+
+<body class="pagina-principal">
+    <header class="cabecalho">
+        <div class="cabecalho-esq">
+            <img src="{% static 'logo.png' %}" alt="C.O.S" class="logo">
+            <span class="pagina-nome">Ordem de Serviço</span>
+        </div>
+        <div class="cabecalho-dir">
+            <a class="btn btn-principal" href="{{ voltar_url }}">Voltar</a>
+        </div>
+    </header>
+
+    <main class="conteudo">
+        <div class="cos-detalhe">
+
+            {% if messages %}
+                {% for mensagem in messages %}
+                    <div class="cos-msg {% if mensagem.tags == 'error' %}cos-msg--erro{% else %}cos-msg--sucesso{% endif %}">{{ mensagem }}</div>
+                {% endfor %}
+            {% endif %}
+
+            {% if erro_foto %}
+                <div class="cos-msg cos-msg--erro">{{ erro_foto }}</div>
+            {% endif %}
+
+            <!-- Cabeçalho da O.S. -->
+            <section class="cos-hero">
+                <div class="cos-hero-top">
+                    <span class="cos-num-os">O.S. {{ ordem.numero_OS }}</span>
+                    <div>
+                        <h1>{{ ordem.descricao }}</h1>
+                        <div class="cos-endereco">📍 {{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}{% if ordem.complemento %} · {{ ordem.complemento }}{% endif %}</div>
+                    </div>
+                    {% if ordem.status == 'ABERTA' %}<span class="cos-status-pill cos-status--aberta">Aberta</span>
+                    {% elif ordem.status == 'EM EXECUÇÃO' %}<span class="cos-status-pill cos-status--execucao">Em execução</span>
+                    {% elif ordem.status == 'EM ANÁLISE' %}<span class="cos-status-pill cos-status--analise">Em análise</span>
+                    {% else %}<span class="cos-status-pill cos-status--concluida">Concluída</span>{% endif %}
+                </div>
+                <div class="cos-meta">
+                    <div class="cos-meta-item"><span class="cos-lbl">Data prevista</span><span class="cos-val">{{ ordem.data_prevista|date:"d/m/Y" }}</span></div>
+                    <div class="cos-meta-item"><span class="cos-lbl">Categoria</span><span class="cos-val">{{ ordem.get_categoria_display }}</span></div>
+                    <div class="cos-meta-item"><span class="cos-lbl">Prioridade</span><span class="cos-val">{{ ordem.get_prioridade_display }}</span></div>
+                    <div class="cos-meta-item"><span class="cos-lbl">Prestador</span><span class="cos-val">{{ ordem.prestador.nome|default:"Não atribuído" }}</span></div>
+                </div>
+            </section>
+
+            <!-- Banners de status -->
+            {% if ordem.status == 'EM ANÁLISE' %}
+                <div class="cos-banner cos-banner--info">
+                    <div><strong>Aguardando análise da administração</strong>As fotos foram enviadas e esta O.S. está bloqueada para edição até a decisão do administrador.</div>
+                </div>
+            {% elif ordem.status == 'CONCLUÍDA' %}
+                <div class="cos-banner cos-banner--ok">
+                    <div><strong>Serviço concluído e aprovado</strong>{% if ordem.entregue_em %}Finalizado em {{ ordem.entregue_em|date:"d/m/Y \à\s H:i" }}.{% endif %}</div>
+                </div>
+            {% endif %}
+
+            {% if ordem.motivo_reprovacao and ordem.status == 'EM EXECUÇÃO' %}
+                <div class="cos-banner cos-banner--alerta">
+                    <div><strong>Devolvida pela administração para ajuste</strong>{{ ordem.motivo_reprovacao }}<br><span style="font-weight:500;font-size:.85rem">Corrija o indicado, envie as fotos complementares e solicite a aprovação novamente.</span></div>
+                </div>
+            {% endif %}
+
+            <!-- Fotos Antes / Depois -->
+            <div class="cos-fotos-grid">
+                <section class="cos-col-foto">
+                    <div class="cos-col-head">
+                        <h2>Antes do serviço</h2>
+                        <span class="cos-tag cos-tag--antes">ANTES</span>
+                        <span class="cos-qtd">{{ qtd_antes }} foto{{ qtd_antes|pluralize }}</span>
+                    </div>
+                    <p class="cos-col-ajuda">Estado do local antes do início do serviço.</p>
+                    <div class="cos-mini-grid">
+                        {% for foto in fotos_antes %}
+                            <a class="cos-mini" href="{{ foto.imagem.url }}" target="_blank" rel="noopener noreferrer" title="Ampliar foto ANTES">
+                                <img src="{{ foto.imagem.url }}" alt="Foto ANTES da O.S. {{ ordem.numero_OS }}" loading="lazy">
+                                <span class="cos-hora">{{ foto.data_envio|date:"d/m H:i" }}</span>
+                            </a>
+                        {% empty %}
+                            <div class="cos-vazio">Nenhuma foto ANTES enviada ainda.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="cos-col-foto">
+                    <div class="cos-col-head">
+                        <h2>Depois do serviço</h2>
+                        <span class="cos-tag cos-tag--depois">DEPOIS</span>
+                        <span class="cos-qtd">{{ qtd_depois }} foto{{ qtd_depois|pluralize }}</span>
+                    </div>
+                    <p class="cos-col-ajuda">Resultado final após a execução do serviço.</p>
+                    <div class="cos-mini-grid">
+                        {% for foto in fotos_depois %}
+                            <a class="cos-mini" href="{{ foto.imagem.url }}" target="_blank" rel="noopener noreferrer" title="Ampliar foto DEPOIS">
+                                <img src="{{ foto.imagem.url }}" alt="Foto DEPOIS da O.S. {{ ordem.numero_OS }}" loading="lazy">
+                                <span class="cos-hora">{{ foto.data_envio|date:"d/m H:i" }}</span>
+                            </a>
+                        {% empty %}
+                            <div class="cos-vazio">Nenhuma foto DEPOIS enviada ainda.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Envio de fotos (prestador) -->
+            {% if pode_enviar_fotos %}
+            <section class="cos-upload">
+                <div class="cos-col-head" style="margin-bottom:.9rem">
+                    <h2 style="font-size:1rem;color:var(--azul-marinho)">Enviar fotos do serviço</h2>
+                </div>
+                {% if form.imagem.errors %}
+                    {% for error in form.imagem.errors %}
+                        <div class="cos-msg cos-msg--erro" role="alert">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+                <div class="cos-upload-grid">
+                    <form action="{% url 'ordens:anexar_foto' ordem.pk %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo" value="ANTES">
+                        <label class="cos-dropzone">
+                            <input type="file" name="imagem" accept="image/*" required onchange="this.closest('form').querySelector('.cos-arquivo').textContent = this.files[0] ? this.files[0].name : 'Nenhum arquivo selecionado'">
+                            <div class="cos-cam">📷</div>
+                            <div class="cos-txt">Adicionar foto ANTES</div>
+                            <div class="cos-sub">Toque para abrir a câmera ou galeria</div>
+                        </label>
+                        <div class="cos-arquivo" style="font-size:.78rem;color:var(--azul-acinzentado);margin-bottom:.6rem;font-weight:600">Nenhum arquivo selecionado</div>
+                        <button type="submit" class="cos-btn cos-btn--primario">Enviar foto ANTES</button>
+                    </form>
+
+                    <form action="{% url 'ordens:anexar_foto' ordem.pk %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo" value="DEPOIS">
+                        <label class="cos-dropzone">
+                            <input type="file" name="imagem" accept="image/*" required onchange="this.closest('form').querySelector('.cos-arquivo').textContent = this.files[0] ? this.files[0].name : 'Nenhum arquivo selecionado'">
+                            <div class="cos-cam">📸</div>
+                            <div class="cos-txt">Adicionar foto DEPOIS</div>
+                            <div class="cos-sub">Registre o resultado final do serviço</div>
+                        </label>
+                        <div class="cos-arquivo" style="font-size:.78rem;color:var(--azul-acinzentado);margin-bottom:.6rem;font-weight:600">Nenhum arquivo selecionado</div>
+                        <button type="submit" class="cos-btn cos-btn--primario">Enviar foto DEPOIS</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Enviar para aprovação (prestador) -->
+            <section class="cos-envio-aprovacao">
+                <h2>Finalizar atendimento</h2>
+                {% if pode_enviar_aprovacao %}
+                    <p>Com fotos ANTES e DEPOIS registradas, envie a O.S. para a administração aprovar o serviço.</p>
+                    <form action="{% url 'ordens:enviar_aprovacao' ordem.pk %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="cos-btn cos-btn--verde cos-btn--block">Enviar para aprovação da administração</button>
+                    </form>
+                {% else %}
+                    <p>Para liberar o envio para aprovação, faltam:
+                        {% if qtd_antes == 0 %}<strong>1 foto ANTES</strong>{% endif %}
+                        {% if qtd_antes == 0 and qtd_depois == 0 %} e {% endif %}
+                        {% if qtd_depois == 0 %}<strong>1 foto DEPOIS</strong>{% endif %}.
+                        <br>Atual: {{ qtd_antes }} antes · {{ qtd_depois }} depois.
+                    </p>
+                    <button type="button" class="cos-btn cos-btn--verde cos-btn--block" disabled>Enviar para aprovação da administração</button>
+                {% endif %}
+            </section>
+            {% endif %}
+
+            <!-- Aprovação (administrador) -->
+            {% if mostrar_aprovacao_admin %}
+            <section class="cos-aprovacao-admin">
+                <h2>Aprovação da O.S. {{ ordem.numero_OS }}</h2>
+                <p>O prestador enviou as fotos e aguarda sua decisão. Analise as imagens ANTES e DEPOIS acima.</p>
+                <div class="cos-decisao-grid">
+                    <div class="cos-decisao cos-decisao--aprovar">
+                        <h3>✔ Aprovar serviço</h3>
+                        <p style="font-size:.82rem;color:var(--azul-acinzentado);margin-bottom:.8rem">Marca a O.S. como concluída.</p>
+                        <form action="{% url 'ordens:aprovar' ordem.pk %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="cos-btn cos-btn--verde cos-btn--block">Aprovar e concluir</button>
+                        </form>
+                    </div>
+                    <div class="cos-decisao cos-decisao--reprovar">
+                        <h3>✖ Reprovar e devolver</h3>
+                        <form action="{% url 'ordens:reprovar' ordem.pk %}" method="POST">
+                            {% csrf_token %}
+                            <textarea name="motivo" placeholder="Descreva o motivo da reprovação (ex.: falta foto de ângulo, sinalização incompleta...)" required></textarea>
+                            <button type="submit" class="cos-btn cos-btn--vermelho cos-btn--block">Reprovar e devolver ao prestador</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+        </div>
+    </main>
+</body>
+
+</html>

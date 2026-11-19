@@ -486,6 +486,74 @@ def listar_ordens_admin(request):
         'tem_filtros': bool(busca or status or prioridade or prestador_id or dia_selecionado),
     })
 
+# ============================================================
+# Fluxo de execução da Ordem de Serviço (PRESTADOR)
+# ============================================================
+
+@login_required
+@require_POST
+def iniciar_servico(request, pk):
+    """Permite ao prestador responsável iniciar uma O.S. aberta."""
+
+    if request.user.perfil != 'PRESTADOR':
+        raise PermissionDenied('Ação permitida somente para prestadores.')
+
+    ordem = get_object_or_404(
+        OrdemServico,
+        pk=pk,
+        prestador__usuario=request.user,
+        prestador__status=True,
+    )
+
+    if ordem.status != OrdemServico.Status.ABERTA:
+        return HttpResponse(status=400)
+
+    ordem.status = OrdemServico.Status.EM_EXECUCAO
+    ordem.save(update_fields=['status'])
+
+    return redirect('ordens:listar')
+
+
+@login_required
+@require_POST
+def finalizar_servico(request, pk):
+    """Encaminha a O.S. em execução para análise administrativa."""
+
+    if request.user.perfil != 'PRESTADOR':
+        raise PermissionDenied('Ação permitida somente para prestadores.')
+
+    ordem = get_object_or_404(
+        OrdemServico,
+        pk=pk,
+        prestador__usuario=request.user,
+        prestador__status=True,
+    )
+
+    if ordem.status != OrdemServico.Status.EM_EXECUCAO:
+        return HttpResponse(status=400)
+
+    tem_antes = ordem.fotos.filter(tipo=FotosOS.Tipo.ANTES).exists()
+    tem_depois = ordem.fotos.filter(tipo=FotosOS.Tipo.DEPOIS).exists()
+
+    if not (tem_antes and tem_depois):
+        messages.error(
+            request,
+            'Para finalizar são necessárias pelo menos uma foto ANTES '
+            'e uma foto DEPOIS do serviço.'
+        )
+        return redirect('ordens:detalhe', pk=ordem.pk)
+
+    ordem.status = OrdemServico.Status.EM_ANALISE
+    ordem.motivo_reprovacao = ''
+    ordem.save(update_fields=['status', 'motivo_reprovacao'])
+
+    messages.success(
+        request,
+        f'O.S. {ordem.numero_OS} enviada para análise da administração.'
+    )
+
+    return redirect('ordens:detalhe', pk=ordem.pk)
+
 
 # ============================================================
 # Fluxo de aprovação: prestador envia para análise / admin decide

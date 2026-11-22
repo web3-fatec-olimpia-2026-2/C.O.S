@@ -14,6 +14,6 @@ urlpatterns = [
     path('<int:pk>/enviar-aprovacao/', views.enviar_para_aprovacao, name='enviar_aprovacao'),
     path('<int:pk>/aprovar/', views.aprovar_os, name='aprovar'),
     path('<int:pk>/reprovar/', views.reprovar_os, name='reprovar'),
+    path('<int:pk>/pdf/', views.os_pdf, name='pdf'),
     path('<int:pk>/', views.detalhe_ordem, name='detalhe'),
-    
 ]

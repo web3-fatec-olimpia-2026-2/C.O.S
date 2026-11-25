@@ -814,9 +814,9 @@ def media_temporaria(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
 
 
-# ==========================================
+
 # 1. TESTES DO MODELO (FotoOS)
-# ==========================================
+
 
 @pytest.mark.django_db
 def test_criar_foto_os_e_relacionamento(ordem):
@@ -838,9 +838,8 @@ def test_cascade_ao_excluir_ordem_remove_fotos(ordem):
     assert FotosOS.objects.count() == 0
 
 
-# ==========================================
 # 2. TESTES DO FORMULÁRIO (FotoOSForm)
-# ==========================================
+
 
 def test_foto_form_valido():
     arquivo = gerar_imagem_teste()
@@ -866,9 +865,8 @@ def test_foto_form_invalido_com_arquivo_nao_imagem():
     assert 'imagem' in form.errors
 
 
-# ==========================================
+
 # 3. TESTES DA VIEW (anexar_foto)
-# ==========================================
 
 @pytest.mark.django_db
 def test_anexar_foto_exige_login(client, ordem):
@@ -1047,9 +1045,9 @@ def media_temporaria(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
 
 
-# ==========================================
+
 # 1. TESTES DO MODELO (FotoOS)
-# ==========================================
+
 
 @pytest.mark.django_db
 def test_criar_foto_os_e_relacionamento(ordem):
@@ -1071,9 +1069,9 @@ def test_cascade_ao_excluir_ordem_remove_fotos(ordem):
     assert FotosOS.objects.count() == 0
 
 
-# ==========================================
+
 # 2. TESTES DO FORMULÁRIO (FotoOSForm)
-# ==========================================
+
 
 def test_foto_form_valido():
     arquivo = gerar_imagem_teste()
@@ -1092,9 +1090,9 @@ def test_foto_form_invalido_com_arquivo_nao_imagem():
     assert 'imagem' in form.errors
 
 
-# ==========================================
+
 # 3. TESTES DA VIEW (anexar_foto)
-# ==========================================
+
 
 @pytest.mark.django_db
 def test_anexar_foto_exige_login(client, ordem):
@@ -1170,3 +1168,136 @@ def test_anexar_foto_ordem_inexistente_retorna_404(client, usuario):
 
     response = client.post(url, {'imagem': gerar_imagem_teste()})
     assert response.status_code == 404
+
+class FluxoExecucaoPrestadorTests(TestCase):
+    def setUp(self):
+        Usuario = get_user_model()
+
+        self.usuario_prestador = Usuario.objects.create_user(
+            username='prestador_fluxo',
+            email='prestador_fluxo@example.com',
+            password='Senha@123',
+            perfil='PRESTADOR',
+        )
+
+        self.usuario_outro_prestador = Usuario.objects.create_user(
+            username='outro_prestador',
+            email='outro_prestador@example.com',
+            password='Senha@123',
+            perfil='PRESTADOR',
+        )
+
+        self.usuario_admin = Usuario.objects.create_user(
+            username='admin_fluxo',
+            email='admin_fluxo@example.com',
+            password='Senha@123',
+            perfil='ADMINISTRADOR',
+        )
+
+        self.prestador = Prestador.objects.create(
+            usuario=self.usuario_prestador,
+            nome='Prestador do Fluxo',
+            documento='FLUXO-001',
+            telefone='(17) 90000-0001',
+            email='prestador_fluxo@example.com',
+        )
+
+        self.outro_prestador = Prestador.objects.create(
+            usuario=self.usuario_outro_prestador,
+            nome='Outro Prestador',
+            documento='FLUXO-002',
+            telefone='(17) 90000-0002',
+            email='outro_prestador@example.com',
+        )
+
+        self.ordem = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Manutenção de sinalização',
+            endereco='Rua das Flores',
+            numero_endereco='100',
+            bairro='Centro',
+            prestador=self.prestador,
+            status=OrdemServico.Status.ABERTA,
+        )
+
+    def test_prestador_inicia_ordem_aberta(self):
+        self.client.force_login(self.usuario_prestador)
+
+        response = self.client.post(
+            reverse('ordens:iniciar_servico', args=[self.ordem.pk])
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.ordem.refresh_from_db()
+        self.assertEqual(
+            self.ordem.status,
+            OrdemServico.Status.EM_EXECUCAO,
+        )
+
+    def test_prestador_encaminha_ordem_para_analise(self):
+        self.ordem.status = OrdemServico.Status.EM_EXECUCAO
+        self.ordem.save()
+
+        FotosOS.objects.create(
+            ordem=self.ordem,
+            imagem='comprovantes/teste_antes.jpg',
+            tipo=FotosOS.Tipo.ANTES,
+        )
+
+        FotosOS.objects.create(
+            ordem=self.ordem,
+            imagem='comprovantes/teste_depois.jpg',
+            tipo=FotosOS.Tipo.DEPOIS,
+        )
+
+        self.client.force_login(self.usuario_prestador)
+
+        response = self.client.post(
+            reverse('ordens:finalizar_servico', args=[self.ordem.pk])
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.ordem.refresh_from_db()
+        self.assertEqual(
+            self.ordem.status,
+            OrdemServico.Status.EM_ANALISE,
+        )
+
+    def test_prestador_nao_inicia_ordem_de_outro_prestador(self):
+        outra_ordem = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Ordem de outro prestador',
+            endereco='Rua das Palmeiras',
+            numero_endereco='200',
+            bairro='Centro',
+            prestador=self.outro_prestador,
+        )
+
+        self.client.force_login(self.usuario_prestador)
+
+        response = self.client.post(
+            reverse('ordens:iniciar_servico', args=[outra_ordem.pk])
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_administrador_nao_pode_usar_acoes_do_prestador(self):
+        self.client.force_login(self.usuario_admin)
+
+        response = self.client.post(
+            reverse('ordens:iniciar_servico', args=[self.ordem.pk])
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_prestador_nao_pode_iniciar_ordem_com_status_diferente_de_aberta(self):
+        self.ordem.status = OrdemServico.Status.EM_EXECUCAO
+        self.ordem.save()
+
+        self.client.force_login(self.usuario_prestador)
+
+        response = self.client.post(
+            reverse('ordens:iniciar_servico', args=[self.ordem.pk])
+        )
+
+        self.assertEqual(response.status_code, 400)

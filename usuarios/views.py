@@ -1,11 +1,12 @@
 # Importa a função para renderizar templates HTML.
 from django.contrib.auth import authenticate, login
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from .forms import CadastroUsuarioForm
 from ordens.forms import OrdemForm
 from ordens.selectors import ordens_visiveis_para
 
@@ -42,3 +43,21 @@ def entrar_com_outro_id(request):
     return JsonResponse(
         {'success': True, 'redirect_url': reverse('pagina_inicial')}
     )
+
+
+def cadastro(request):
+    if request.user.is_authenticated:
+        return redirect('pagina_inicial')
+
+    if request.method == 'POST':
+        form = CadastroUsuarioForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect(f"{reverse('login')}?cadastro=sucesso")
+    else:
+        form = CadastroUsuarioForm()
+
+    return render(request, 'usuarios/cadastro.html', {
+        'form': form
+    })

@@ -205,3 +205,131 @@ class UsuarioAuthTests(TestCase):
             self.client.get(reverse('pagina_inicial')).wsgi_request.user,
             usuario_prestador,
         )
+
+
+class CadastroUsuarioTests(TestCase):
+    def setUp(self):
+        self.url_cadastro = reverse('cadastro')
+        self.url_login = reverse('login')
+        self.dados_validos = {
+            'username': 'novo-usuario',
+            'first_name': 'Novo',
+            'last_name': 'Usuario',
+            'email': 'novo@example.com',
+            'password1': 'Cadastro@2026Seguro',
+            'password2': 'Cadastro@2026Seguro',
+        }
+
+    def test_pagina_cadastro_e_exibida_para_visitantes(self):
+        response = self.client.get(self.url_cadastro)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Criar conta')
+        self.assertContains(response, 'E-mail')
+        self.assertContains(response, 'Já possui uma conta?')
+        self.assertNotContains(response, 'name="perfil"')
+
+    def test_cadastro_valido_cria_usuario_com_perfil_comum(self):
+        response = self.client.post(
+            self.url_cadastro,
+            self.dados_validos,
+        )
+
+        usuario = get_user_model().objects.get(username='novo-usuario')
+
+        self.assertRedirects(
+            response,
+            f'{self.url_login}?cadastro=sucesso',
+        )
+        self.assertEqual(usuario.perfil, 'COMUM')
+        self.assertEqual(usuario.email, 'novo@example.com')
+        self.assertTrue(usuario.check_password('Cadastro@2026Seguro'))
+
+    def test_cadastro_nao_permite_escolher_perfil_administrador(self):
+        dados = self.dados_validos.copy()
+        dados['perfil'] = 'ADMINISTRADOR'
+
+        response = self.client.post(self.url_cadastro, dados)
+
+        usuario = get_user_model().objects.get(username='novo-usuario')
+
+        self.assertRedirects(
+            response,
+            f'{self.url_login}?cadastro=sucesso',
+        )
+        self.assertEqual(usuario.perfil, 'COMUM')
+        self.assertFalse(usuario.is_superuser)
+        self.assertFalse(usuario.is_staff)
+
+    def test_cadastro_recusa_email_ja_utilizado(self):
+        get_user_model().objects.create_user(
+            username='usuario-existente',
+            email='novo@example.com',
+            password='OutraSenha@2026',
+        )
+
+        response = self.client.post(
+            self.url_cadastro,
+            self.dados_validos,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Este e-mail já está cadastrado.')
+        self.assertFalse(
+            get_user_model().objects.filter(username='novo-usuario').exists()
+        )
+
+    def test_cadastro_recusa_email_duplicado_com_letras_maiusculas(self):
+        get_user_model().objects.create_user(
+            username='usuario-existente',
+            email='novo@example.com',
+            password='OutraSenha@2026',
+        )
+
+        dados = self.dados_validos.copy()
+        dados['email'] = 'NOVO@EXAMPLE.COM'
+
+        response = self.client.post(self.url_cadastro, dados)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Este e-mail já está cadastrado.')
+
+    def test_cadastro_recusa_senhas_diferentes(self):
+        dados = self.dados_validos.copy()
+        dados['password2'] = 'OutraSenha@2026'
+
+        response = self.client.post(self.url_cadastro, dados)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Os dois campos de senha não correspondem.')
+        self.assertFalse(
+            get_user_model().objects.filter(username='novo-usuario').exists()
+        )
+
+    def test_usuario_autenticado_nao_acessa_cadastro_publico(self):
+        usuario = get_user_model().objects.create_user(
+            username='usuario-logado',
+            email='logado@example.com',
+            password='Senha@2026',
+        )
+        self.client.force_login(usuario)
+
+        response = self.client.get(self.url_cadastro)
+
+        self.assertRedirects(response, reverse('pagina_inicial'))
+
+    def test_usuario_cadastrado_consegue_fazer_login(self):
+        self.client.post(self.url_cadastro, self.dados_validos)
+
+        response = self.client.post(
+            self.url_login,
+            {
+                'username': 'novo-usuario',
+                'password': 'Cadastro@2026Seguro',
+            },
+        )
+
+        self.assertRedirects(response, reverse('pagina_inicial'))
+        self.assertTrue(
+            self.client.get(reverse('pagina_inicial')).wsgi_request.user.is_authenticated
+        )

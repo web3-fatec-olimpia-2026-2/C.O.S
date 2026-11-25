@@ -28,6 +28,12 @@
                     <p>Use seu usuário ou, se for prestador, o seu documento.</p>
                 </header>
 
+                {% if request.GET.cadastro == 'sucesso' %}
+                    <div class="mensagem-sucesso" role="status">
+                        Cadastro realizado com sucesso! Faça login para continuar.
+                    </div>
+                {% endif %}
+
                 {% if form.errors %}
                     <div class="mensagem-erro" role="alert">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -76,6 +82,11 @@
 
                     <button type="submit" class="botao-entrar">Entrar</button>
                 </form>
+
+                <p class="link-cadastro">
+                    Não possui uma conta?
+                    <a href="{% url 'cadastro' %}">Cadastre-se</a>
+                </p>
             </div>
         </section>
     </main>

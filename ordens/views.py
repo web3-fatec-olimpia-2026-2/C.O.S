@@ -639,3 +639,23 @@ def reprovar_os(request, pk):
         f'O.S. {ordem.numero_OS} reprovada e devolvida ao prestador para ajustes.'
     )
     return redirect('ordens:detalhe', pk=ordem.pk)
+
+    
+# O.S. em PDF com WeasyPrint"
+@login_required
+def os_pdf(request, pk):
+    """Gera o PDF de uma O.S. Respeita o mesmo filtro de acesso da listagem."""
+    from django.template.loader import render_to_string
+    from weasyprint import HTML
+
+    ordem = get_object_or_404(ordens_visiveis_para(request.user), pk=pk)
+    html = render_to_string('ordens/os_pdf.html', {
+        'ordem': ordem,
+        'fotos_antes': ordem.fotos.filter(tipo=FotosOS.Tipo.ANTES),
+        'fotos_depois': ordem.fotos.filter(tipo=FotosOS.Tipo.DEPOIS),
+    }, request=request)
+
+    pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    resposta = HttpResponse(pdf, content_type='application/pdf')
+    resposta['Content-Disposition'] = f'inline; filename="os_{ordem.numero_OS}.pdf"'
+    return resposta

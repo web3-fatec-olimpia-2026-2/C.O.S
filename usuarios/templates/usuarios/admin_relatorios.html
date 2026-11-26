@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=26">
+</head>
+<body class="painel-admin">
+    {% include 'usuarios/_admin_sidebar.html' with admin_section='reports' %}
+    <div class="adm-main">
+        {% include 'usuarios/_admin_topbar.html' with admin_title='Relatórios' %}
+        <main class="adm-conteudo">
+            <div class="prestador-dashboard">
+                {% include 'usuarios/_dashboard_ordens.html' %}
+
+                <section class="adm-relatorio-bloco" aria-labelledby="admin-resumo">
+                    <h2 id="admin-resumo">Resumo administrativo</h2>
+                    <div class="adm-relatorio-status">
+                        <p>Criadas neste mês <strong>{{ metricas.criadas_no_mes }}</strong></p>
+                        <p>Usuários cadastrados <strong>{{ total_usuarios }}</strong></p>
+                        <p>Prestadores ativos <strong>{{ total_prestadores }}</strong></p>
+                    </div>
+                </section>
+
+                <section class="adm-relatorio-bloco" aria-labelledby="categoria-relatorio">
+                    <h2 id="categoria-relatorio">Ordens por categoria</h2>
+                    <div class="adm-tabela-wrap">
+                        <table class="adm-tabela">
+                            <thead>
+                                <tr><th scope="col">Categoria</th><th scope="col">Quantidade</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for categoria in categorias %}
+                                <tr><td>{{ categoria.rotulo }}</td><td>{{ categoria.total }}</td></tr>
+                                {% empty %}
+                                <tr><td class="adm-vazio" colspan="2">Nenhuma ordem cadastrada.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

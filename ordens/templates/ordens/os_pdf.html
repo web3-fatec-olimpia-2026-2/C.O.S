@@ -2,39 +2,219 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
+  <title>Relatório de Ordem de Serviço {{ ordem.numero_OS }}</title>
   <style>
-    @page { size: A4; margin: 2cm; }
-    body { font-family: sans-serif; font-size: 11pt; color: #222; }
-    h1 { font-size: 18pt; border-bottom: 2px solid #333; padding-bottom: 6px; }
-    h2 { font-size: 13pt; margin-top: 20px; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 5px 0; vertical-align: top; }
-    td.rotulo { width: 28%; font-weight: bold; }
-    .fotos img { width: 48%; max-height: 7cm; margin: 1%; }
+    @page {
+      size: A4;
+      margin: 18mm 16mm 22mm 16mm;
+      @bottom-left {
+        content: "C.O.S — Controle de Ordens de Serviço";
+        font-size: 8pt;
+        color: #6b7a85;
+      }
+      @bottom-right {
+        content: "Página " counter(page) " de " counter(pages);
+        font-size: 8pt;
+        color: #6b7a85;
+      }
+    }
+
+    * {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.5pt;
+      color: #1f2a33;
+      margin: 0;
+    }
+
+    /* Cabeçalho institucional */
+    .rel-cabecalho {
+      border-bottom: 2.5pt solid #0c3455;
+      padding-bottom: 10pt;
+      margin-bottom: 14pt;
+      display: table;
+      width: 100%;
+    }
+    .rel-cabecalho-esq { display: table-cell; vertical-align: middle; }
+    .rel-cabecalho-dir { display: table-cell; vertical-align: middle; text-align: right; }
+    .rel-instituicao { font-size: 9pt; letter-spacing: .12em; text-transform: uppercase; color: #0c3455; font-weight: 700; }
+    .rel-titulo { font-size: 17pt; font-weight: 700; color: #0c3455; margin: 3pt 0 2pt; }
+    .rel-subtitulo { font-size: 9.5pt; color: #5a6b77; }
+    .rel-os-badge {
+      display: inline-block;
+      background: #0c3455;
+      color: #fff;
+      font-size: 12pt;
+      font-weight: 700;
+      padding: 6pt 12pt;
+      border-radius: 6pt;
+    }
+    .rel-emissao { font-size: 8.5pt; color: #5a6b77; margin-top: 4pt; }
+
+    .rel-blocos { page-break-inside: avoid; margin-bottom: 12pt; }
+    .rel-titulo-secao {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #0c3455;
+      border-left: 3.5pt solid #89d943;
+      padding-left: 6pt;
+      margin: 12pt 0 6pt;
+    }
+
+    /* Dados da OS */
+    table.rel-dados { width: 100%; border-collapse: collapse; }
+    table.rel-dados td { padding: 4.5pt 6pt; border: .6pt solid #d4dde3; vertical-align: top; }
+    td.rotulo { width: 26%; font-weight: 700; background: #eef3f6; color: #0c3455; }
+
+    .badge { display: inline-block; padding: 3pt 9pt; border-radius: 10pt; font-size: 9pt; font-weight: 700; color: #fff; }
+    .badge--aberta { background: #0c3455; }
+    .badge--execucao { background: #1b6f3a; }
+    .badge--analise { background: #7a4ca0; }
+    .badge--concluida { background: #3c7d31; }
+
+    .rel-descricao {
+      border: .8pt solid #c8d5dc;
+      background: #f7fafb;
+      border-radius: 5pt;
+      padding: 8pt 10pt;
+      line-height: 1.5;
+    }
+
+    /* Fotos */
+    .rel-fotos-grid { display: table; width: 100%; border-collapse: separate; border-spacing: 6pt 0; }
+    .rel-foto {
+      display: table-cell;
+      width: 50%;
+      border: .8pt solid #c8d5dc;
+      border-radius: 5pt;
+      padding: 5pt;
+      text-align: center;
+      page-break-inside: avoid;
+      vertical-align: top;
+    }
+    .rel-foto img { width: 100%; max-height: 62mm; object-fit: cover; border-radius: 4pt; }
+    .rel-foto-legenda { font-size: 8.5pt; color: #5a6b77; margin-top: 4pt; }
+    .rel-foto-tipo { font-weight: 700; color: #0c3455; }
+    .rel-sem-foto { color: #8a97a1; font-size: 9.5pt; font-style: italic; }
+
+    /* Assinaturas */
+    .rel-assinaturas { display: table; width: 100%; margin-top: 22pt; page-break-inside: avoid; }
+    .rel-assinatura { display: table-cell; width: 50%; text-align: center; padding: 0 14pt; }
+    .rel-linha-assinatura { border-top: .9pt solid #1f2a33; margin-top: 26pt; padding-top: 4pt; font-size: 9pt; color: #3c4a55; }
   </style>
 </head>
 <body>
-  <h1>Ordem de Serviço {{ ordem.numero_OS }}</h1>
-  <table>
-    <tr><td class="rotulo">Status</td><td>{{ ordem.get_status_display }}</td></tr>
-    <tr><td class="rotulo">Categoria</td><td>{{ ordem.get_categoria_display }}</td></tr>
-    <tr><td class="rotulo">Prioridade</td><td>{{ ordem.get_prioridade_display }}</td></tr>
-    <tr><td class="rotulo">Prestador</td><td>{{ ordem.prestador|default:"Não atribuído" }}</td></tr>
-    <tr><td class="rotulo">Endereço</td><td>{{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}</td></tr>
-    <tr><td class="rotulo">Data prevista</td><td>{{ ordem.data_prevista|date:"d/m/Y" }}</td></tr>
-    <tr><td class="rotulo">Criada em</td><td>{{ ordem.criada_em|date:"d/m/Y H:i" }}</td></tr>
-    <tr><td class="rotulo">Entregue em</td><td>{{ ordem.entregue_em|date:"d/m/Y H:i"|default:"-" }}</td></tr>
-    <tr><td class="rotulo">Descrição</td><td>{{ ordem.descricao }}</td></tr>
-  </table>
+  <header class="rel-cabecalho">
+    <div class="rel-cabecalho-esq">
+      <div class="rel-instituicao">Controle de Ordens de Serviço — C.O.S</div>
+      <div class="rel-titulo">Relatório de Ordem de Serviço</div>
+      <div class="rel-subtitulo">Documento de acompanhamento e prestação de contas do serviço executado</div>
+    </div>
+    <div class="rel-cabecalho-dir">
+      <span class="rel-os-badge">O.S. {{ ordem.numero_OS }}</span>
+      <div class="rel-emissao">Emitido em {% now "d/m/Y às H:i" %}</div>
+    </div>
+  </header>
 
-  <h2>Fotos: Antes</h2>
-  <div class="fotos">
-    {% for foto in fotos_antes %}<img src="{{ foto.imagem.url }}">{% empty %}<p>Sem fotos.</p>{% endfor %}
-  </div>
+  <section class="rel-blocos">
+    <div class="rel-titulo-secao">Dados da ordem</div>
+    <table class="rel-dados">
+      <tr>
+        <td class="rotulo">Status</td>
+        <td>
+          {% if ordem.status == 'ABERTA' %}<span class="badge badge--aberta">Aberta</span>
+          {% elif ordem.status == 'EM EXECUÇÃO' %}<span class="badge badge--execucao">Em execução</span>
+          {% elif ordem.status == 'EM ANÁLISE' %}<span class="badge badge--analise">Em análise</span>
+          {% else %}<span class="badge badge--concluida">Concluída</span>{% endif %}
+        </td>
+        <td class="rotulo">Prioridade</td>
+        <td>{{ ordem.get_prioridade_display }}</td>
+      </tr>
+      <tr>
+        <td class="rotulo">Categoria</td>
+        <td>{{ ordem.get_categoria_display }}</td>
+        <td class="rotulo">Data prevista</td>
+        <td>{{ ordem.data_prevista|date:"d/m/Y" }}</td>
+      </tr>
+      <tr>
+        <td class="rotulo">Criada em</td>
+        <td>{{ ordem.criada_em|date:"d/m/Y H:i" }}</td>
+        <td class="rotulo">Entregue em</td>
+        <td>{{ ordem.entregue_em|date:"d/m/Y H:i"|default:"— ainda não entregue" }}</td>
+      </tr>
+      <tr>
+        <td class="rotulo">Endereço</td>
+        <td colspan="3">{{ ordem.endereco }}, {{ ordem.numero_endereco }} — {{ ordem.bairro }}{% if ordem.complemento %} · {{ ordem.complemento }}{% endif %}</td>
+      </tr>
+      <tr>
+        <td class="rotulo">Prestador</td>
+        <td colspan="3">
+          {% if ordem.prestador %}
+            {{ ordem.prestador.nome }}<br>
+            <small>Documento: {{ ordem.prestador.documento|default:"—" }} · Telefone: {{ ordem.prestador.telefone|default:"—" }} · E-mail: {{ ordem.prestador.email|default:"—" }}</small>
+          {% else %}
+            Não atribuído
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </section>
 
-  <h2>Fotos: Depois</h2>
-  <div class="fotos">
-    {% for foto in fotos_depois %}<img src="{{ foto.imagem.url }}">{% empty %}<p>Sem fotos.</p>{% endfor %}
-  </div>
+  <section class="rel-blocos">
+    <div class="rel-titulo-secao">Descrição do serviço</div>
+    <div class="rel-descricao">{{ ordem.descricao|linebreaksbr }}</div>
+    {% if ordem.motivo_reprovacao %}
+    <div class="rel-descricao" style="border-color:#c62821; background:#fceeee; margin-top:6pt;">
+      <strong>Motivo da reprovação:</strong> {{ ordem.motivo_reprovacao }}
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="rel-blocos">
+    <div class="rel-titulo-secao">Registro fotográfico — Antes do serviço</div>
+    <div class="rel-fotos-grid">
+      {% for foto in fotos_antes %}
+      <figure class="rel-foto">
+        <img src="{{ foto.imagem.url }}" alt="Foto antes do serviço">
+        <figcaption class="rel-foto-legenda"><span class="rel-foto-tipo">ANTES</span> · {{ foto.data_envio|date:"d/m/Y H:i" }}</figcaption>
+      </figure>
+      {% empty %}
+      <p class="rel-sem-foto">Nenhuma foto ANTES registrada para esta ordem.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="rel-blocos">
+    <div class="rel-titulo-secao">Registro fotográfico — Depois do serviço</div>
+    <div class="rel-fotos-grid">
+      {% for foto in fotos_depois %}
+      <figure class="rel-foto">
+        <img src="{{ foto.imagem.url }}" alt="Foto depois do serviço">
+        <figcaption class="rel-foto-legenda"><span class="rel-foto-tipo">DEPOIS</span> · {{ foto.data_envio|date:"d/m/Y H:i" }}</figcaption>
+      </figure>
+      {% empty %}
+      <p class="rel-sem-foto">Nenhuma foto DEPOIS registrada para esta ordem.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <footer class="rel-assinaturas">
+    <div class="rel-assinatura">
+      <div class="rel-linha-assinatura">
+        {% if ordem.prestador %}{{ ordem.prestador.nome }}{% else %}Prestador responsável{% endif %}<br>
+        Assinatura do prestador
+      </div>
+    </div>
+    <div class="rel-assinatura">
+      <div class="rel-linha-assinatura">
+        Administrador responsável<br>
+        Assinatura e carimbo da administração
+      </div>
+    </div>
+  </footer>
 </body>
 </html>

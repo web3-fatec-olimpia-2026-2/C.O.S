@@ -1,5 +1,70 @@
 
 // Funções de Popup
+function configurarArrastePopup() {
+    const popup = document.querySelector('.caixa-popup');
+    const alca = popup?.querySelector('[data-popup-arraste]');
+    if (!popup || !alca) return;
+
+    let pointerAtivo = null;
+    let inicioX = 0;
+    let inicioY = 0;
+    let esquerdaInicial = 0;
+    let topoInicial = 0;
+
+    function limitarPosicao() {
+        if (popup.style.position !== 'fixed') return;
+
+        const maxEsquerda = Math.max(0, window.innerWidth - popup.offsetWidth);
+        const maxTopo = Math.max(0, window.innerHeight - popup.offsetHeight);
+        const esquerda = Number.parseFloat(popup.style.left) || 0;
+        const topo = Number.parseFloat(popup.style.top) || 0;
+        popup.style.left = `${Math.max(0, Math.min(esquerda, maxEsquerda))}px`;
+        popup.style.top = `${Math.max(0, Math.min(topo, maxTopo))}px`;
+    }
+
+    alca.addEventListener('pointerdown', function (event) {
+        if (!event.isPrimary || event.button !== 0) return;
+
+        const dimensoes = popup.getBoundingClientRect();
+        pointerAtivo = event.pointerId;
+        inicioX = event.clientX;
+        inicioY = event.clientY;
+        esquerdaInicial = dimensoes.left;
+        topoInicial = dimensoes.top;
+
+        popup.style.position = 'fixed';
+        popup.style.left = `${dimensoes.left}px`;
+        popup.style.top = `${dimensoes.top}px`;
+        popup.style.width = `${dimensoes.width}px`;
+        popup.style.height = `${dimensoes.height}px`;
+        popup.classList.add('caixa-popup--movendo');
+        alca.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+
+    alca.addEventListener('pointermove', function (event) {
+        if (event.pointerId !== pointerAtivo) return;
+
+        const maxEsquerda = Math.max(0, window.innerWidth - popup.offsetWidth);
+        const maxTopo = Math.max(0, window.innerHeight - popup.offsetHeight);
+        const esquerda = esquerdaInicial + event.clientX - inicioX;
+        const topo = topoInicial + event.clientY - inicioY;
+        popup.style.left = `${Math.max(0, Math.min(esquerda, maxEsquerda))}px`;
+        popup.style.top = `${Math.max(0, Math.min(topo, maxTopo))}px`;
+    });
+
+    function encerrarArraste(event) {
+        if (event.pointerId !== pointerAtivo) return;
+        pointerAtivo = null;
+        popup.classList.remove('caixa-popup--movendo');
+    }
+
+    alca.addEventListener('pointerup', encerrarArraste);
+    alca.addEventListener('pointercancel', encerrarArraste);
+    alca.addEventListener('lostpointercapture', encerrarArraste);
+    window.addEventListener('resize', limitarPosicao);
+}
+
 function abrirPopup() {
     const fundoPopup = document.getElementById('fundoPopup');
     if (fundoPopup) {
@@ -355,6 +420,8 @@ async function editarOrdem(event, botao) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    configurarArrastePopup();
+
     const form = document.getElementById('formNovaOrdem');
     const fundoPopup = document.getElementById('fundoPopup');
     const btnNovaOS = document.getElementById('btnNovaOS');

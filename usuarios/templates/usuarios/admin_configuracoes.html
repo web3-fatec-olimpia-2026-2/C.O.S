@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=22">
+</head>
+<body class="painel-admin">
+    {% include 'usuarios/_admin_sidebar.html' with admin_section='settings' %}
+    <div class="adm-main">
+        {% include 'usuarios/_admin_topbar.html' with admin_title='Configurações' %}
+        <main class="adm-conteudo">
+            <section class="adm-intro" aria-labelledby="adm-titulo">
+                <div>
+                    <p class="adm-eyebrow">Acesso e contas</p>
+                    <h2 id="adm-titulo">Cadastrar novo usuário</h2>
+                    <p>Crie uma conta e defina o perfil de acesso ao sistema.</p>
+                </div>
+            </section>
+            <form method="post" class="adm-formulario">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="adm-form-erros" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="adm-form-grid">
+                    {% for field in form %}
+                    <div class="adm-form-campo{% if field.errors %} adm-form-campo--erro{% endif %}">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                        {% for error in field.errors %}<span class="adm-form-erro">{{ error }}</span>{% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="adm-form-ajuda">Para o perfil Prestador, informe também documento e telefone. Isso cria o cadastro de prestador necessário para atribuir ordens.</p>
+                <div class="adm-form-acoes">
+                    <button class="adm-filtrar" type="submit">Criar usuário</button>
+                    <a class="adm-btn-abrir" href="{% url 'usuarios_admin' %}">Cancelar</a>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

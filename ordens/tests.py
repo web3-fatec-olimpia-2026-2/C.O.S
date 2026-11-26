@@ -384,6 +384,33 @@ class OrdemServicoTests(TestCase):
         self.assertNotContains(response, 'Você está logado com sucesso.')
         self.assertNotContains(response, 'Bem-vindo,')
 
+    def test_pagina_inicial_exibe_cards_de_resumo_por_status(self):
+        OrdemServico.objects.create(
+            data_prevista='2026-12-01',
+            descricao='OS aberta para o card',
+            endereco='Rua A',
+            numero_endereco='1',
+            bairro='Centro',
+            status=OrdemServico.Status.ABERTA,
+        )
+        OrdemServico.objects.create(
+            data_prevista='2026-12-01',
+            descricao='OS concluída para o card',
+            endereco='Rua B',
+            numero_endereco='2',
+            bairro='Centro',
+            status=OrdemServico.Status.CONCLUIDA,
+        )
+
+        response = self.client.get(reverse('pagina_inicial'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'home-cards')
+        self.assertContains(response, 'Abertas')
+        self.assertContains(response, 'Concluídas')
+        self.assertEqual(response.context['metricas']['abertas'], 1)
+        self.assertEqual(response.context['metricas']['concluidas'], 1)
+
     def test_excluir_ordem_com_requisicao_htmx_remove_ordem(self):
         ordem = OrdemServico.objects.create(
             data_prevista='2026-12-01',
@@ -641,14 +668,78 @@ class ListarAdminTests(TestCase):
         self.assertNotContains(resposta, '{{ usuario.last_name')
         self.assertTemplateUsed(resposta, 'ordens/admin_lista.html')
 
+    def test_painel_de_ordens_e_somente_acompanhamento_com_menu_funcional(self):
+        self.client.force_login(self.admin)
+        ordem = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Ordem para acompanhamento',
+            endereco='Rua das Flores',
+            numero_endereco='10',
+            bairro='Centro',
+        )
+
+        resposta = self.client.get(reverse('ordens:listar_admin'))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'Todas as ordens de serviço')
+        self.assertContains(resposta, 'Acompanhar')
+        self.assertContains(
+            resposta,
+            f'href="{reverse("usuarios_admin")}"',
+        )
+        self.assertContains(resposta, f'href="{reverse("relatorios_admin")}"')
+        self.assertContains(resposta, f'href="{reverse("configuracoes_admin")}"')
+        self.assertNotContains(resposta, 'Editar')
+        self.assertNotContains(resposta, 'adm-graficos')
+        self.assertContains(
+            resposta,
+            f'{reverse("ordens:detalhe", args=[ordem.pk])}?origem=admin&amp;pagina=1',
+        )
+
+    def test_busca_htmx_retorna_parcial_sem_html_completo(self):
+        self.client.force_login(self.admin)
+        OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Faixa pedestre na avenida',
+            endereco='Av. Principal',
+            numero_endereco='10',
+            bairro='Centro',
+        )
+
+        resposta = self.client.get(
+            reverse('ordens:listar_admin'),
+            {'q': 'faixa'},
+            HTTP_HX_REQUEST='true',
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertTemplateUsed(resposta, 'ordens/_admin_resultados.html')
+        self.assertContains(resposta, 'Faixa pedestre na avenida')
+        self.assertNotContains(resposta, '<html')
+        self.assertNotContains(resposta, 'adm-sidebar')
+
+    def test_busca_htmx_sem_resultados_exibe_estado_vazio(self):
+        self.client.force_login(self.admin)
+
+        resposta = self.client.get(
+            reverse('ordens:listar_admin'),
+            {'q': 'termo_inexistente_xyz'},
+            HTTP_HX_REQUEST='true',
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'Nenhuma ordem encontrada')
+
     def test_menu_principal_fica_no_cabecalho_com_home(self):
         self.client.force_login(self.admin)
 
         resposta = self.client.get(reverse('pagina_inicial'))
 
-        self.assertContains(resposta, 'Menus')
+        self.assertNotContains(resposta, '>Menus<')
         self.assertContains(resposta, 'Home')
-        self.assertContains(resposta, 'menu-navegacao-casa')
+        self.assertContains(resposta, 'Relatórios')
+        self.assertContains(resposta, 'Configurações')
+        self.assertContains(resposta, 'menu-navegacao-link--ativo')
         self.assertNotContains(resposta, '<span class="pagina-nome">Visão geral</span>', html=True)
         self.assertNotContains(resposta, 'rodape-links')
 
@@ -1333,3 +1424,140 @@ class FluxoExecucaoPrestadorTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_tela_detalhe_exibe_botao_iniciar_para_prestador_com_os_aberta(self):
+        self.client.force_login(self.usuario_prestador)
+
+        response = self.client.get(reverse('ordens:detalhe', args=[self.ordem.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse('ordens:iniciar_servico', args=[self.ordem.pk]),
+        )
+        self.assertNotContains(
+            response,
+            reverse('ordens:finalizar_servico', args=[self.ordem.pk]),
+        )
+
+    def test_tela_detalhe_exibe_botao_finalizar_quando_os_em_execucao(self):
+        self.ordem.status = OrdemServico.Status.EM_EXECUCAO
+        self.ordem.save()
+
+        self.client.force_login(self.usuario_prestador)
+
+        response = self.client.get(reverse('ordens:detalhe', args=[self.ordem.pk]))
+
+        self.assertContains(
+            response,
+            reverse('ordens:finalizar_servico', args=[self.ordem.pk]),
+        )
+        self.assertNotContains(
+            response,
+            reverse('ordens:iniciar_servico', args=[self.ordem.pk]),
+        )
+
+    def test_tela_detalhe_nao_exibe_acoes_do_prestador_para_administrador(self):
+        self.client.force_login(self.usuario_admin)
+
+        response = self.client.get(reverse('ordens:detalhe', args=[self.ordem.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(
+            response,
+            reverse('ordens:iniciar_servico', args=[self.ordem.pk]),
+        )
+        self.assertNotContains(
+            response,
+            reverse('ordens:finalizar_servico', args=[self.ordem.pk]),
+        )
+
+    def test_tela_detalhe_apresenta_linha_do_tempo_com_etapa_atual(self):
+        self.client.force_login(self.usuario_admin)
+
+        response = self.client.get(reverse('ordens:detalhe', args=[self.ordem.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Acompanhamento da ordem')
+        etapas = response.context['timeline_steps']
+        self.assertEqual(len(etapas), 6)
+        self.assertTrue(etapas[0]['concluida'])
+        self.assertTrue(etapas[2]['atual'])
+        self.assertEqual(etapas[1]['descricao'], 'Prestador responsável definido')
+
+
+class RelatorioPDFTests(TestCase):
+    """Geração do relatório em PDF da Ordem de Serviço."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username='pdfadmin',
+            email='pdfadmin@example.com',
+            password='Senha@123',
+            perfil='ADMINISTRADOR',
+        )
+        self.prestador_user = User.objects.create_user(
+            username='pdfprest',
+            email='pdfprest@example.com',
+            password='Senha@123',
+            perfil='PRESTADOR',
+        )
+        self.prestador = Prestador.objects.create(
+            usuario=self.prestador_user,
+            nome='Prestador do Relatório',
+            documento='999.888.777-66',
+            telefone='(17) 91111-2222',
+            email='pdfprest@example.com',
+        )
+        self.ordem = OrdemServico.objects.create(
+            data_prevista='2026-12-10',
+            descricao='Manutenção de faixa de pedestres na Avenida Central',
+            endereco='Rua das Flores',
+            numero_endereco='100',
+            bairro='Centro',
+            prestador=self.prestador,
+        )
+
+    def test_administrador_gera_relatorio_pdf_valido(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('ordens:pdf', args=[self.ordem.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertGreater(len(response.content), 500)
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+    def test_usuario_anonimo_e_redirecionado_para_login(self):
+        response = self.client.get(reverse('ordens:pdf', args=[self.ordem.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_prestador_sem_vinculo_nao_baixa_pdf(self):
+        outro = get_user_model().objects.create_user(
+            username='outroprest',
+            email='outro.prestador@example.com',
+            password='Senha@123',
+            perfil='PRESTADOR',
+        )
+        Prestador.objects.create(
+            usuario=outro,
+            nome='Outro Prestador',
+            documento='111.222.333-44',
+            telefone='(17) 93333-4444',
+            email='outro.prestador@example.com',
+        )
+        self.client.force_login(outro)
+
+        response = self.client.get(reverse('ordens:pdf', args=[self.ordem.pk]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_tela_detalhe_exibe_botao_de_abrir_relatorio_pdf(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('ordens:detalhe', args=[self.ordem.pk]))
+
+        self.assertContains(response, reverse('ordens:pdf', args=[self.ordem.pk]))

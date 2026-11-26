@@ -167,13 +167,17 @@ def _url_detalhe_admin(request, ordem_pk, pagina):
 
 
 def _url_retorno_detalhe(request):
-    if (
-        request.user.perfil != 'ADMINISTRADOR'
-        or request.GET.get('origem') != 'admin'
-    ):
+    if request.user.perfil != 'ADMINISTRADOR':
         return reverse('pagina_inicial')
 
-    return _url_painel_admin(request, manter_pagina=True)
+    origem = request.GET.get('origem')
+    if origem == 'relatorios':
+        params = _parametros_painel_admin(request)
+        url_relatorios = reverse('relatorios_admin')
+        return f'{url_relatorios}?{params.urlencode()}' if params else url_relatorios
+    if origem == 'admin':
+        return _url_painel_admin(request, manter_pagina=True)
+    return reverse('pagina_inicial')
 
 
 def _contexto_detalhe(ordem, request, form=None, erro_foto=None):
@@ -184,6 +188,109 @@ def _contexto_detalhe(ordem, request, form=None, erro_foto=None):
         OrdemServico.Status.ABERTA, OrdemServico.Status.EM_EXECUCAO
     )
     eh_prestador = request.user.perfil == 'PRESTADOR'
+    status_em_execucao_ou_posterior = ordem.status in (
+        OrdemServico.Status.EM_EXECUCAO,
+        OrdemServico.Status.EM_ANALISE,
+        OrdemServico.Status.CONCLUIDA,
+    )
+    status_em_analise_ou_posterior = ordem.status in (
+        OrdemServico.Status.EM_ANALISE,
+        OrdemServico.Status.CONCLUIDA,
+    )
+    fotos_antes_texto = (
+        f'{len(fotos_antes)} foto(s) antes enviadas'
+        if fotos_antes
+        else (
+            'Aguardando início do serviço e envio das fotos antes'
+            if ordem.status == OrdemServico.Status.ABERTA
+            else 'Serviço iniciado, mas sem fotos antes registradas'
+        )
+    )
+    if fotos_antes:
+        fotos_antes_texto += (
+            ' · '
+            + timezone.localtime(fotos_antes[0].data_envio).strftime('%d/%m/%Y %H:%M')
+        )
+    fotos_depois_texto = (
+        f'{len(fotos_depois)} foto(s) depois enviadas'
+        if fotos_depois
+        else (
+            'Etapa avançada sem foto depois disponível'
+            if status_em_analise_ou_posterior
+            else 'Aguardando fotos depois do serviço'
+        )
+    )
+    if fotos_depois:
+        fotos_depois_texto += (
+            ' · '
+            + timezone.localtime(fotos_depois[-1].data_envio).strftime('%d/%m/%Y %H:%M')
+        )
+    etapa_atual = None
+    if ordem.status == OrdemServico.Status.ABERTA:
+        etapa_atual = 3 if ordem.prestador else 2
+    elif ordem.status == OrdemServico.Status.EM_EXECUCAO:
+        etapa_atual = 4 if fotos_depois else 3
+    elif ordem.status == OrdemServico.Status.EM_ANALISE:
+        etapa_atual = 5
+
+    timeline_steps = [
+        {
+            'titulo': 'Ordem aberta',
+            'descricao': (
+                'Criada em '
+                + timezone.localtime(ordem.criada_em).strftime('%d/%m/%Y %H:%M')
+            ),
+            'concluida': True,
+            'atual': False,
+        },
+        {
+            'titulo': (
+                f'Atribuída a {ordem.prestador.nome}'
+                if ordem.prestador
+                else 'Aguardando atribuição'
+            ),
+            'descricao': (
+                'Prestador responsável definido'
+                if ordem.prestador
+                else 'A ordem ainda não possui prestador'
+            ),
+            'concluida': bool(ordem.prestador),
+            'atual': etapa_atual == 2,
+        },
+        {
+            'titulo': 'Início do serviço e fotos “antes”',
+            'descricao': fotos_antes_texto,
+            'concluida': status_em_execucao_ou_posterior,
+            'atual': etapa_atual == 3,
+        },
+        {
+            'titulo': 'Conclusão do serviço e fotos “depois”',
+            'descricao': fotos_depois_texto,
+            'concluida': status_em_analise_ou_posterior,
+            'atual': etapa_atual == 4,
+        },
+        {
+            'titulo': 'Em análise administrativa',
+            'descricao': (
+                'Conferência aprovada'
+                if ordem.status == OrdemServico.Status.CONCLUIDA
+                else 'Aguardando conferência das fotos'
+            ),
+            'concluida': ordem.status == OrdemServico.Status.CONCLUIDA,
+            'atual': etapa_atual == 5,
+        },
+        {
+            'titulo': 'Concluída (após aprovação)',
+            'descricao': (
+                'Entregue em '
+                + timezone.localtime(ordem.entregue_em).strftime('%d/%m/%Y %H:%M')
+                if ordem.entregue_em
+                else 'Registro entra no histórico após aprovação'
+            ),
+            'concluida': ordem.status == OrdemServico.Status.CONCLUIDA,
+            'atual': False,
+        },
+    ]
     return {
         'ordem': ordem,
         'voltar_url': _url_retorno_detalhe(request),
@@ -193,7 +300,14 @@ def _contexto_detalhe(ordem, request, form=None, erro_foto=None):
         'fotos_depois': fotos_depois,
         'qtd_antes': len(fotos_antes),
         'qtd_depois': len(fotos_depois),
+        'timeline_steps': timeline_steps,
         'pode_enviar_fotos': eh_prestador and status_aberto,
+        'pode_iniciar': (
+            eh_prestador and ordem.status == OrdemServico.Status.ABERTA
+        ),
+        'pode_finalizar': (
+            eh_prestador and ordem.status == OrdemServico.Status.EM_EXECUCAO
+        ),
         'pode_enviar_aprovacao': (
             eh_prestador and status_aberto and bool(fotos_antes) and bool(fotos_depois)
         ),
@@ -454,7 +568,7 @@ def listar_ordens_admin(request):
     params.pop('pagina', None)
     query_base = params.urlencode()
 
-    return render(request, 'ordens/admin_lista.html', {
+    contexto = {
         'usuario': request.user,
         'page_obj': pagina,
         'paginator': paginador,
@@ -485,7 +599,13 @@ def listar_ordens_admin(request):
             dia=None,
         ),
         'tem_filtros': bool(busca or status or prioridade or prestador_id or dia_selecionado),
-    })
+    }
+
+    # Requisicao assincrona (HTMX): devolve apenas o parcial da lista, sem recarregar a página.
+    if request.headers.get('HX-Request') == 'true':
+        return render(request, 'ordens/_admin_resultados.html', contexto)
+
+    return render(request, 'ordens/admin_lista.html', contexto)
 
 # ============================================================
 # Fluxo de execução da Ordem de Serviço (PRESTADOR)
@@ -512,7 +632,11 @@ def iniciar_servico(request, pk):
     ordem.status = OrdemServico.Status.EM_EXECUCAO
     ordem.save(update_fields=['status'])
 
-    return redirect('ordens:listar')
+    messages.success(
+        request,
+        f'O.S. {ordem.numero_OS} iniciada. Registre as fotos ANTES e DEPOIS do serviço.'
+    )
+    return redirect('ordens:detalhe', pk=ordem.pk)
 
 
 @login_required

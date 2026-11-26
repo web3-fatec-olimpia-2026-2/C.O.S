@@ -1,0 +1,116 @@
+{# Parcial do painel administrativo: contagem, tabela e paginação. #}
+{# Reutilizado pela página completa e pelas respostas HTMX da busca. #}
+
+<!-- Tabela -->
+<div class="adm-tabela-cabecalho">
+    <div>
+        <h2>Ordens cadastradas</h2>
+        <p>Resultados correspondentes à busca e aos filtros.</p>
+    </div>
+    <span class="adm-contagem">{{ total }} ordem{{ total|pluralize:",ns" }}</span>
+</div>
+<p class="sr-only" id="adm-dica-tabela">Em telas pequenas, deslize horizontalmente para consultar todas as colunas.</p>
+<div class="adm-tabela-wrap">
+    <table class="adm-tabela" aria-describedby="adm-dica-tabela">
+        <thead>
+            <tr>
+                <th scope="col">Nº</th>
+                <th scope="col">Criada em</th>
+                <th scope="col">Descrição</th>
+                <th scope="col">Categoria</th>
+                <th scope="col">Prioridade</th>
+                <th scope="col">Endereço</th>
+                <th scope="col">Prestador</th>
+                <th scope="col">Status</th>
+                <th scope="col">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordem in page_obj %}
+            <tr>
+                <td class="adm-numero" data-label="Nº">
+                    <a href="{{ ordem.detalhe_admin_url }}" class="adm-link-ordem"
+                        aria-label="Abrir detalhes da O.S. {{ ordem.numero_OS }}">{{ ordem.numero_OS }}</a>
+                </td>
+                <td class="adm-data" data-label="Criada em">{{ ordem.criada_em|date:"d/m/Y H:i" }}</td>
+                <td class="adm-descricao" data-label="Descrição">
+                    <a href="{{ ordem.detalhe_admin_url }}" class="adm-link-ordem">
+                        {{ ordem.descricao|truncatechars:60 }}
+                    </a>
+                </td>
+                <td class="adm-categoria" data-label="Categoria">{{ ordem.categoria_curta }}</td>
+                <td>
+                    {% if ordem.prioridade == 'URGENTE' %}
+                    <span class="adm-badge adm-badge--urgente"><span aria-hidden="true">▲▲</span> Urgente</span>
+                    {% elif ordem.prioridade == 'ALTA' %}
+                    <span class="adm-badge adm-badge--alta"><span aria-hidden="true">▲</span> Alta</span>
+                    {% elif ordem.prioridade == 'BAIXA' %}
+                    <span class="adm-badge adm-badge--baixa"><span aria-hidden="true">▼</span> Baixa</span>
+                    {% else %}
+                    <span class="adm-badge adm-badge--normal"><span aria-hidden="true">●</span> Normal</span>
+                    {% endif %}
+                </td>
+                <td class="adm-endereco" data-label="Endereço">{{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}</td>
+                <td class="adm-prestador" data-label="Prestador">{{ ordem.prestador_curto }}</td>
+                <td>
+                    {% if ordem.status == 'ABERTA' %}
+                    <span class="adm-badge adm-badge--aberta"><span aria-hidden="true">◯</span> Aberta</span>
+                    {% elif ordem.status == 'EM EXECUÇÃO' %}
+                    <span class="adm-badge adm-badge--execucao"><span aria-hidden="true">▶</span> Em execução</span>
+                    {% elif ordem.status == 'EM ANÁLISE' %}
+                    <span class="adm-badge adm-badge--analise"><span aria-hidden="true">◉</span> Em análise</span>
+                    {% else %}
+                    <span class="adm-badge adm-badge--concluida"><span aria-hidden="true">✓</span> Concluída</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="adm-acoes">
+                        <a href="{{ ordem.detalhe_admin_url }}" class="adm-btn-abrir">Acompanhar</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="adm-vazio">
+                    <span class="adm-vazio-icone" aria-hidden="true">⌕</span>
+                    <strong>Nenhuma ordem encontrada</strong>
+                    <span>Experimente ajustar a busca ou remover alguns filtros.</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginação -->
+<div class="adm-paginacao">
+    <span class="adm-paginacao-info">
+        {% if total %}Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ total }} ordens{% else %}Nenhuma ordem para exibir{% endif %}
+    </span>
+    {% if is_paginated %}
+    <nav class="adm-paginas" aria-label="Paginação">
+        {% if page_obj.has_previous %}
+        <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.previous_page_number }}"
+            class="adm-pagina-link">‹ Anterior</a>
+        {% else %}
+        <span class="adm-pagina-link adm-pagina-link--desabilitada">‹ Anterior</span>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+        {% if num == page_obj.number %}
+        <span class="adm-pagina-link adm-pagina-link--ativa">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <a
+            href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ num }}" class="adm-pagina-link">
+            {{ num }}</a>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.next_page_number }}"
+                class="adm-pagina-link">Próxima ›</a>
+            {% else %}
+            <span class="adm-pagina-link adm-pagina-link--desabilitada">Próxima ›</span>
+            {% endif %}
+    </nav>
+    {% endif %}
+</div>

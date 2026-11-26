@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios do prestador | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=26">
+</head>
+<body class="pagina-principal">
+    <header class="cabecalho">
+        <div class="cabecalho-esq">
+            <img src="{% static 'logo.png' %}" alt="C.O.S" class="logo">
+            <span class="pagina-nome">Relatórios <span aria-hidden="true">·</span> Meu desempenho</span>
+            {% include 'usuarios/_app_navigation.html' with nav_section='reports' %}
+        </div>
+        <div class="cabecalho-dir">
+            <details class="conta-dropdown">
+                <summary class="identificacao-usuario" aria-label="Abrir opções da conta">
+                    <span class="avatar-usuario" aria-hidden="true">
+                        {% if usuario.first_name %}
+                        {{ usuario.first_name|slice:":1"|upper }}{% if usuario.last_name %}{{ usuario.last_name|slice:":1"|upper }}{% endif %}
+                        {% else %}
+                        {{ usuario.username|slice:":1"|upper }}
+                        {% endif %}
+                    </span>
+                    <span class="usuario-dados">
+                        <span class="usuario-nome">{{ usuario.get_full_name|default:usuario.username }}</span>
+                        <span class="usuario-perfil">{{ usuario.get_perfil_display }}</span>
+                    </span>
+                    <span class="seta-conta" aria-hidden="true">▾</span>
+                </summary>
+                <div class="menu-conta">
+                    <form action="{% url 'logout' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="item-menu-conta item-menu-sair">Sair</button>
+                    </form>
+                </div>
+            </details>
+        </div>
+    </header>
+
+    <main class="conteudo prestador-dashboard">
+        {% include 'usuarios/_dashboard_ordens.html' %}
+    </main>
+</body>
+</html>

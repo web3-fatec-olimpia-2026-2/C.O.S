@@ -1,0 +1,46 @@
+{% load static %}
+<aside class="adm-sidebar" aria-label="Navegação administrativa">
+    <a class="adm-logo-box" href="{% url 'ordens:listar_admin' %}" aria-label="Ir para ordens de serviço">
+        <img src="{% static 'logo.png' %}" alt="C.O.S" class="adm-logo-img">
+    </a>
+    <p class="adm-logo-texto">ÁREA ADMINISTRATIVA</p>
+
+    <nav class="adm-menu">
+        <a href="{% url 'pagina_inicial' %}" class="adm-menu-item">
+            <span class="adm-menu-icone" aria-hidden="true">←</span>
+            Visão geral
+        </a>
+        <a href="{% url 'ordens:listar_admin' %}"
+            class="adm-menu-item{% if admin_section == 'orders' %} adm-menu-item--ativo{% endif %}"
+            {% if admin_section == 'orders' %}aria-current="page"{% endif %}>
+            <span class="adm-menu-icone" aria-hidden="true">☰</span>
+            Ordens de Serviço
+        </a>
+        <a href="{% url 'usuarios_admin' %}"
+            class="adm-menu-item{% if admin_section == 'users' %} adm-menu-item--ativo{% endif %}"
+            {% if admin_section == 'users' %}aria-current="page"{% endif %}>
+            <span class="adm-menu-icone" aria-hidden="true">◉</span>
+            Usuários
+        </a>
+        <a href="{% url 'relatorios_admin' %}"
+            class="adm-menu-item{% if admin_section == 'reports' %} adm-menu-item--ativo{% endif %}"
+            {% if admin_section == 'reports' %}aria-current="page"{% endif %}>
+            <span class="adm-menu-icone" aria-hidden="true">▤</span>
+            Relatórios
+        </a>
+        <a href="{% url 'configuracoes_admin' %}"
+            class="adm-menu-item{% if admin_section == 'settings' %} adm-menu-item--ativo{% endif %}"
+            {% if admin_section == 'settings' %}aria-current="page"{% endif %}>
+            <span class="adm-menu-icone" aria-hidden="true">⚙</span>
+            Configurações
+        </a>
+    </nav>
+
+    <form action="{% url 'logout' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="adm-sair">
+            <span class="adm-menu-icone" aria-hidden="true">⏻</span>
+            Sair
+        </button>
+    </form>
+</aside>

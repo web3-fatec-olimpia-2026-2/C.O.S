@@ -1,0 +1,27 @@
+<nav class="menu-navegacao" aria-label="Navegação principal">
+    <div class="menu-navegacao-links">
+        <a href="{% url 'pagina_inicial' %}"
+            class="menu-navegacao-link{% if nav_section == 'home' %} menu-navegacao-link--ativo{% endif %}"
+            {% if nav_section == 'home' %}aria-current="page"{% endif %}>
+            Home
+        </a>
+        {% if request.user.perfil == 'ADMINISTRADOR' or request.user.perfil == 'PRESTADOR' %}
+        <a href="{% url 'relatorios_admin' %}"
+            class="menu-navegacao-link{% if nav_section == 'reports' %} menu-navegacao-link--ativo{% endif %}"
+            {% if nav_section == 'reports' %}aria-current="page"{% endif %}>
+            Relatórios
+        </a>
+        {% else %}
+        <span class="menu-navegacao-link menu-navegacao-link--indisponivel" aria-disabled="true">Relatórios</span>
+        {% endif %}
+        {% if request.user.perfil == 'ADMINISTRADOR' %}
+        <a href="{% url 'configuracoes_admin' %}"
+            class="menu-navegacao-link{% if nav_section == 'settings' %} menu-navegacao-link--ativo{% endif %}"
+            {% if nav_section == 'settings' %}aria-current="page"{% endif %}>
+            Configurações
+        </a>
+        {% else %}
+        <span class="menu-navegacao-link menu-navegacao-link--indisponivel" aria-disabled="true">Configurações</span>
+        {% endif %}
+    </div>
+</nav>

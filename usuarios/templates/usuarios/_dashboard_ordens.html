@@ -1,0 +1,175 @@
+<section class="prestador-intro" aria-labelledby="titulo-relatorios">
+    <div>
+        <p class="home-eyebrow">
+            {% if usuario.perfil == 'PRESTADOR' %}Painel do prestador{% else %}Indicadores{% endif %}
+        </p>
+        <h1 id="titulo-relatorios">
+            {% if usuario.perfil == 'PRESTADOR' %}Acompanhe suas ordens de serviço{% else %}Relatório geral{% endif %}
+        </h1>
+        <p>
+            {% if usuario.perfil == 'PRESTADOR' %}
+            Veja o que está por fazer, em andamento e concluído.
+            {% else %}
+            Acompanhe todas as ordens cadastradas, seus status e evolução.
+            {% endif %}
+        </p>
+    </div>
+    <span class="prestador-total">{{ metricas.total }} ordem{{ metricas.total|pluralize }}</span>
+</section>
+
+<section class="home-cards prestador-status-cards" aria-label="Filtrar ordens por status">
+    {% for card in status_cards %}
+    <a href="{{ card.url }}"
+        class="home-card home-card--{{ card.classe }} prestador-status-card{% if card.selecionado %} prestador-status-card--ativo{% endif %}"
+        {% if card.selecionado %}aria-current="true"{% endif %}
+        aria-label="Filtrar {{ card.rotulo|lower }}: {{ card.quantidade }} ordem(ns)">
+        <span class="home-card-icone" aria-hidden="true">
+            {% if card.chave == 'total' %}▤
+            {% elif card.chave == 'abertas' %}◯
+            {% elif card.chave == 'em_execucao' %}▶
+            {% elif card.chave == 'em_analise' %}◉
+            {% else %}✓{% endif %}
+        </span>
+        <span class="home-card-label">{{ card.rotulo }}</span>
+        <strong>{{ card.quantidade }}</strong>
+        <span class="home-card-nota">{{ card.nota }}</span>
+    </a>
+    {% endfor %}
+</section>
+
+<section class="prestador-graficos" aria-label="Gráficos do relatório">
+    <article class="prestador-grafico-card">
+        <div class="prestador-grafico-titulo">
+            <div>
+                <h2>Ordens por status</h2>
+                <p>
+                    {% if usuario.perfil == 'PRESTADOR' %}Distribuição do seu histórico{% else %}Distribuição de todas as ordens{% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="prestador-distribuicao">
+            <div class="prestador-donut{% if not metricas.total %} prestador-donut--vazio{% endif %}"
+                style="background: conic-gradient(var(--azul-marinho) 0% {{ status_chart.aberta_fim }}%, var(--verde-lima) {{ status_chart.aberta_fim }}% {{ status_chart.execucao_fim }}%, #e8b84a {{ status_chart.execucao_fim }}% {{ status_chart.analise_fim }}%, #b7c8d4 {{ status_chart.analise_fim }}% 100%)"
+                role="img"
+                aria-label="{{ metricas.abertas }} a fazer, {{ metricas.em_execucao }} em execução, {{ metricas.em_analise }} em análise e {{ metricas.concluidas }} concluídas">
+                <span>{{ metricas.total }}<small>ordens</small></span>
+            </div>
+            <ul class="prestador-legenda">
+                <li><span class="prestador-ponto prestador-ponto--aberta"></span>A fazer<strong>{{ metricas.abertas }}</strong></li>
+                <li><span class="prestador-ponto prestador-ponto--execucao"></span>Em execução<strong>{{ metricas.em_execucao }}</strong></li>
+                <li><span class="prestador-ponto prestador-ponto--analise"></span>Em análise<strong>{{ metricas.em_analise }}</strong></li>
+                <li><span class="prestador-ponto prestador-ponto--concluida"></span>Concluídas<strong>{{ metricas.concluidas }}</strong></li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="prestador-grafico-card">
+        <div class="prestador-grafico-titulo">
+            <div>
+                <h2>Ordens cadastradas</h2>
+                <p>Últimos sete dias</p>
+            </div>
+            <span class="prestador-grafico-total">{{ total_semana }}<small>na semana</small></span>
+        </div>
+        <div class="prestador-barras" aria-label="Ordens cadastradas por dia nos últimos sete dias">
+            {% for dia in dias_semana %}
+            <div class="prestador-barra-coluna" title="{{ dia.data }}: {{ dia.quantidade }} ordem(ns)">
+                <span class="prestador-barra-valor">{{ dia.quantidade }}</span>
+                <div class="prestador-barra-trilho">
+                    <span class="prestador-barra" style="height: {{ dia.percentual }}%"></span>
+                </div>
+                <span class="prestador-barra-dia">{{ dia.semana }}</span>
+                <span class="prestador-barra-data">{{ dia.data }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="prestador-ordens" aria-labelledby="titulo-lista-ordens">
+    <div class="prestador-ordens-cabecalho">
+        <div>
+            <h2 id="titulo-lista-ordens">
+                {% if filtro_status %}Ordens {{ filtro_status_rotulo }}
+                {% elif usuario.perfil == 'PRESTADOR' %}Todas as suas ordens
+                {% else %}Todas as ordens{% endif %}
+            </h2>
+            <p>
+                {% if usuario.perfil == 'PRESTADOR' %}
+                Ordens atribuídas ao seu perfil para acompanhamento.
+                {% else %}
+                Ordens de todos os prestadores e sem atribuição.
+                {% endif %}
+            </p>
+        </div>
+        <div class="prestador-lista-resumo">
+            <span>{{ page_obj.paginator.count }} resultado{{ page_obj.paginator.count|pluralize }}</span>
+            {% if filtro_status %}<a href="{% url 'relatorios_admin' %}">Limpar filtro</a>{% endif %}
+        </div>
+    </div>
+
+    {% if page_obj %}
+    <div class="adm-tabela-wrap prestador-tabela-wrap">
+        <table class="adm-tabela prestador-tabela">
+            <thead>
+                <tr>
+                    <th scope="col">Nº O.S.</th>
+                    <th scope="col">Descrição</th>
+                    {% if usuario.perfil == 'ADMINISTRADOR' %}<th scope="col">Prestador</th>{% endif %}
+                    <th scope="col">Criada em</th>
+                    <th scope="col">Data prevista</th>
+                    <th scope="col">Categoria</th>
+                    <th scope="col">Prioridade</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Detalhes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ordem in page_obj %}
+                <tr>
+                    <td class="adm-numero" data-label="Nº O.S.">{{ ordem.numero_OS }}</td>
+                    <td class="adm-descricao" data-label="Descrição">{{ ordem.descricao|truncatechars:70 }}</td>
+                    {% if usuario.perfil == 'ADMINISTRADOR' %}
+                    <td data-label="Prestador">{{ ordem.prestador.nome|default:"Não atribuído" }}</td>
+                    {% endif %}
+                    <td data-label="Criada em">{{ ordem.criada_em|date:"d/m/Y H:i" }}</td>
+                    <td data-label="Data prevista">{{ ordem.data_prevista|date:"d/m/Y" }}</td>
+                    <td data-label="Categoria">{{ ordem.get_categoria_display }}</td>
+                    <td data-label="Prioridade">{{ ordem.get_prioridade_display }}</td>
+                    <td data-label="Status"><span class="status-tabela">{{ ordem.get_status_display }}</span></td>
+                    <td data-label="Detalhes">
+                        {% if usuario.perfil == 'ADMINISTRADOR' %}
+                        <a class="adm-btn-abrir" href="{{ ordem.relatorio_detalhe_url }}">Acompanhar</a>
+                        {% else %}
+                        <a class="adm-btn-abrir" href="{% url 'ordens:detalhe' ordem.pk %}">Abrir ordem</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="prestador-sem-ordens">
+        <span class="estado-vazio-icone" aria-hidden="true">▤</span>
+        <h3>{% if filtro_status %}Nenhuma ordem neste status{% elif usuario.perfil == 'PRESTADOR' %}Nenhuma ordem atribuída{% else %}Nenhuma ordem cadastrada{% endif %}</h3>
+        <p>{% if filtro_status %}Selecione outro cartão para ver ordens de outro status.
+            {% elif usuario.perfil == 'PRESTADOR' %}Quando uma ordem for atribuída a você, ela aparecerá neste painel.
+            {% else %}As ordens cadastradas aparecerão neste painel.{% endif %}</p>
+    </div>
+    {% endif %}
+
+    {% if is_paginated %}
+    <nav class="adm-paginacao" aria-label="Paginação das ordens">
+        <span class="adm-paginacao-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <div class="adm-paginas">
+            {% if page_obj.has_previous %}
+            <a class="adm-pagina-link" href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.previous_page_number }}">‹ Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a class="adm-pagina-link" href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.next_page_number }}">Próxima ›</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</section>

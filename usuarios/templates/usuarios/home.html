@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visão geral | C.O.S</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=27">
 </head>
 
 <body class="pagina-principal">
@@ -15,30 +15,19 @@
     <header class="cabecalho">
         <div class="cabecalho-esq">
             <img src="{% static 'logo.png' %}" alt="C.O.S" class="logo">
-            <nav class="menu-navegacao" aria-label="Menus principais">
-                <span class="menu-navegacao-titulo">Menus</span>
-                <div class="menu-navegacao-links">
-                    <a href="{% url 'pagina_inicial' %}" class="menu-navegacao-link menu-navegacao-link--ativo"
-                        aria-current="page">
-                        <span class="menu-navegacao-casa" aria-hidden="true">⌂</span>
-                        Home
-                    </a>
-                    <span class="menu-navegacao-link menu-navegacao-link--indisponivel" aria-disabled="true">
-                        Relatórios <span class="menu-navegacao-tag">em breve</span>
-                    </span>
-                    <span class="menu-navegacao-link menu-navegacao-link--indisponivel" aria-disabled="true">
-                        Configurações <span class="menu-navegacao-tag">em breve</span>
-                    </span>
-                </div>
-            </nav>
+            <span class="pagina-nome">Ordens de Serviço <span aria-hidden="true">·</span> Acompanhamento</span>
+            {% include 'usuarios/_app_navigation.html' with nav_section='home' %}
         </div>
         <div class="cabecalho-dir">
             {% if request.user.perfil != 'PRESTADOR' %}
-            <button type="button" class="btn btn-principal" id="btnNovaOS">+ Nova O.S.</button>
+            <button type="button" class="btn btn-principal cabecalho-acao" id="btnNovaOS">
+                <span aria-hidden="true">+</span> Nova O.S.
+            </button>
             {% endif %}
             {% if request.user.perfil == 'ADMINISTRADOR' %}
-            <a href="{% url 'ordens:listar_admin' %}" class="btn btn-principal" style="margin-left: 10px;">📊 Painel
-                Administrador</a>
+            <a href="{% url 'ordens:listar_admin' %}" class="btn btn-principal cabecalho-acao">
+                <span aria-hidden="true">📊</span> Painel Administrador
+            </a>
             {% endif %}
             <details class="conta-dropdown">
                 <summary class="identificacao-usuario" aria-label="Abrir opções da conta">
@@ -70,12 +59,45 @@
 
     <!-- Conteúdo principal -->
     <main class="conteudo">
+        {% if request.user.perfil == 'ADMINISTRADOR' or request.user.perfil == 'PRESTADOR' %}
+        <section class="home-cards" aria-label="Resumo das ordens de serviço por status">
+            <div class="home-card home-card--aberta">
+                <span class="home-card-icone" aria-hidden="true">◯</span>
+                <span class="home-card-label">Abertas</span>
+                <strong>{{ metricas.abertas }}</strong>
+                <span class="home-card-nota">Aguardando início do serviço</span>
+            </div>
+            <div class="home-card home-card--execucao">
+                <span class="home-card-icone" aria-hidden="true">▶</span>
+                <span class="home-card-label">Em execução</span>
+                <strong>{{ metricas.em_execucao }}</strong>
+                <span class="home-card-nota">Serviços em andamento</span>
+            </div>
+            <div class="home-card home-card--analise">
+                <span class="home-card-icone" aria-hidden="true">◉</span>
+                <span class="home-card-label">Em análise</span>
+                <strong>{{ metricas.em_analise }}</strong>
+                <span class="home-card-nota">Aguardando conferência</span>
+            </div>
+            <div class="home-card home-card--concluida">
+                <span class="home-card-icone" aria-hidden="true">✓</span>
+                <span class="home-card-label">Concluídas</span>
+                <strong>{{ metricas.concluidas }}</strong>
+                <span class="home-card-nota">Ordens finalizadas</span>
+            </div>
+        </section>
+        {% endif %}
+
         <section class="secao-ordens" aria-labelledby="titulo-ordens">
             <div class="titulo-secao">
                 <div>
+                    <p class="home-eyebrow">Visão geral</p>
                     <h2 id="titulo-ordens">Ordens de Serviço</h2>
                     <p>Acompanhe as ordens cadastradas no sistema.</p>
                 </div>
+                {% if ordens %}
+                <span class="contador-ordens">{{ ordens|length }} ordem{{ ordens|length|pluralize }}</span>
+                {% endif %}
             </div>
 
             {# Os IDs da tabela e os atributos data-* são usados pelo home.js para atualizar linhas via AJAX. #}
@@ -138,6 +160,7 @@
             </div>
             {% else %}
             <div class="estado-vazio" id="estadoVazio">
+                <span class="estado-vazio-icone" aria-hidden="true">▤</span>
                 {% if request.user.perfil == 'PRESTADOR' %}
                 <h3>Nenhuma O.S. atribuída</h3>
                 <p>Quando uma ordem for atribuída a você, ela aparecerá aqui.</p>
@@ -197,34 +220,38 @@
         <div class="caixa-popup" role="dialog" aria-modal="true" aria-labelledby="titulo-popup">
             <button type="button" class="botao-fechar" id="btnFecharPopup">&times;</button>
 
-            <img class="logo-popup" src="{% static 'logo.png' %}" alt="Logo C.O.S.">
-            <h3 id="titulo-popup">
-                {% if form.instance.pk %}Editar O.S. #{{ form.instance.numero_OS }}{% else %}Criar Nova Ordem de
-                Serviço{% endif %}
-            </h3>
-            <form id="formNovaOrdem"
-                action="{% if form.instance.pk %}{% url 'ordens:editar' form.instance.pk %}{% else %}{% url 'ordens:criar' %}{% endif %}"
-                data-editing-pk="{{ form.instance.pk|default:'' }}" method="POST">
-                {% csrf_token %}
-                <div id="errosGerais" class="erro-form" role="alert">{{ form.non_field_errors }}</div>
+            <div class="popup-layout">
+                <header class="popup-identidade" data-popup-arraste title="Arraste para mover a janela">
+                    <img class="logo-popup" src="{% static 'logo.png' %}" alt="Logo C.O.S.">
+                    <h3 id="titulo-popup">
+                        {% if form.instance.pk %}Editar O.S. #{{ form.instance.numero_OS }}{% else %}Criar Nova Ordem de
+                        Serviço{% endif %}
+                    </h3>
+                </header>
+                <form id="formNovaOrdem" class="form-popup"
+                    action="{% if form.instance.pk %}{% url 'ordens:editar' form.instance.pk %}{% else %}{% url 'ordens:criar' %}{% endif %}"
+                    data-editing-pk="{{ form.instance.pk|default:'' }}" method="POST">
+                    {% csrf_token %}
+                    <div id="errosGerais" class="erro-form form-popup-erros" role="alert">{{ form.non_field_errors }}</div>
 
-                {% for field in form %}
-                <div class="grupo-form">
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {% for error in field.errors %}
-                    <span class="erro-form">{{ error }}</span>
+                    {% for field in form %}
+                    <div class="grupo-form{% if field.name == 'descricao' %} grupo-form--descricao{% endif %}">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <span class="erro-form">{{ error }}</span>
+                        {% endfor %}
+                    </div>
                     {% endfor %}
-                </div>
-                {% endfor %}
 
-                <div class="botoes-form">
-                    <button type="submit" class="btn btn-principal">
-                        {% if form.instance.pk %}Salvar alterações{% else %}Salvar{% endif %}
-                    </button>
-                    <button type="button" class="btn" id="btnCancelar">Cancelar</button>
-                </div>
-            </form>
+                    <div class="botoes-form">
+                        <button type="submit" class="btn btn-principal">
+                            {% if form.instance.pk %}Salvar alterações{% else %}Salvar{% endif %}
+                        </button>
+                        <button type="button" class="btn" id="btnCancelar">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -290,7 +317,7 @@
     </div>
 
     {# O script conecta os controles acima aos fluxos assíncronos do painel. #}
-    <script src="{% static 'home.js' %}?v=9"></script>
+    <script src="{% static 'home.js' %}?v=10"></script>
 </body>
 
 </html>

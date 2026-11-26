@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários | C.O.S</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=22">
+</head>
+<body class="painel-admin">
+    {% include 'usuarios/_admin_sidebar.html' with admin_section='users' %}
+    <div class="adm-main">
+        {% include 'usuarios/_admin_topbar.html' with admin_title='Usuários' %}
+        <main class="adm-conteudo">
+            <section class="adm-intro" aria-labelledby="adm-titulo">
+                <div>
+                    <p class="adm-eyebrow">Administração</p>
+                    <h2 id="adm-titulo">Usuários cadastrados</h2>
+                    <p>Consulte as contas e os perfis de acesso do sistema.</p>
+                </div>
+                <a class="adm-filtrar" href="{% url 'configuracoes_admin' %}">Cadastrar usuário</a>
+            </section>
+            {% if messages %}
+            {% for message in messages %}
+            <p class="adm-mensagem" role="status">{{ message }}</p>
+            {% endfor %}
+            {% endif %}
+            <div class="adm-tabela-wrap">
+                <table class="adm-tabela adm-tabela-usuarios">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nome</th>
+                            <th scope="col">Usuário</th>
+                            <th scope="col">E-mail</th>
+                            <th scope="col">Perfil</th>
+                            <th scope="col">Prestador</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in usuarios %}
+                        <tr>
+                            <td data-label="Nome">{{ item.get_full_name|default:item.username }}</td>
+                            <td data-label="Usuário">{{ item.username }}</td>
+                            <td data-label="E-mail">{{ item.email }}</td>
+                            <td data-label="Perfil">{{ item.get_perfil_display }}</td>
+                            <td data-label="Prestador">
+                                {% if item.prestador_perfil %}{{ item.prestador_perfil.nome }}{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="adm-vazio" colspan="5">Nenhum usuário cadastrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

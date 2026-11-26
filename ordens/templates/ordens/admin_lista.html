@@ -7,191 +7,53 @@
     <title>Painel administrativo | C.O.S</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=21">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 
-<body class="painel-admin">
+<body class="painel-admin" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
-    <!-- Barra lateral -->
-    <aside class="adm-sidebar" aria-label="Navegação principal">
-        <div class="adm-logo-box">
-            <img src="{% static 'logo.png' %}" alt="C.O.S" class="adm-logo-img">
-        </div>
-        <p class="adm-logo-texto">ORDEM DE SERVIÇO</p>
-
-        <nav class="adm-menu">
-            <a href="{% url 'pagina_inicial' %}" class="adm-menu-item">
-                <span class="adm-menu-icone" aria-hidden="true">←</span>
-                Voltar para Ordens de Serviço
-            </a>
-
-
-            <a href="{% url 'ordens:listar_admin' %}" class="adm-menu-item adm-menu-item--ativo" aria-current="page">
-                <span class="adm-menu-icone" aria-hidden="true">☰</span>
-                Ordens de Serviço
-            </a>
-            <span class="adm-menu-item adm-menu-item--desabilitado" title="Módulo em desenvolvimento">
-                <span class="adm-menu-icone" aria-hidden="true">◉</span>
-                Usuários
-                <span class="adm-menu-tag">em breve</span>
-            </span>
-            <span class="adm-menu-item adm-menu-item--desabilitado" title="Módulo em desenvolvimento">
-                <span class="adm-menu-icone" aria-hidden="true">▤</span>
-                Relatórios
-                <span class="adm-menu-tag">em breve</span>
-            </span>
-        </nav>
-
-        <form action="{% url 'logout' %}" method="POST">
-            {% csrf_token %}
-            <button type="submit" class="adm-sair">
-                <span class="adm-menu-icone" aria-hidden="true">⏻</span>
-                Sair
-            </button>
-        </form>
-    </aside>
+    {% include 'usuarios/_admin_sidebar.html' with admin_section='orders' %}
 
     <!-- Conteúdo principal -->
     <div class="adm-main">
-        <header class="adm-topbar">
-            <div class="adm-topbar-titulo">
-                <img src="{% static 'logo.png' %}" alt="" class="adm-mobile-logo">
-                <div>
-                    <p class="adm-contexto">Painel administrativo</p>
-                    <h1>Ordens de Serviço</h1>
-                    <a href="{% url 'pagina_inicial' %}" class="adm-mobile-voltar">← Visão geral</a>
-                </div>
-            </div>
-            <div class="adm-topbar-dir">
-                <details class="conta-dropdown">
-                    <summary class="identificacao-usuario" aria-label="Abrir opções da conta">
-                        <span class="avatar-usuario" aria-hidden="true">
-                            {% if usuario.first_name %}
-                            {{ usuario.first_name|slice:":1"|upper }}{% if usuario.last_name %}{{ usuario.last_name|slice:":1"|upper }}{% endif %}
-                            {% else %}
-                            {{ usuario.username|slice:":1"|upper }}
-                            {% endif %}
-                        </span>
-                        <span class="usuario-dados">
-                            <span class="usuario-nome">{{ usuario.get_full_name|default:usuario.username }}</span>
-                            <span class="usuario-perfil">{{ usuario.get_perfil_display }}</span>
-                        </span>
-                        <span class="seta-conta" aria-hidden="true">▾</span>
-                    </summary>
-                    <div class="menu-conta">
-                        <form action="{% url 'logout' %}" method="POST">
-                            {% csrf_token %}
-                            <button type="submit" class="item-menu-conta item-menu-sair">Sair</button>
-                        </form>
-                    </div>
-                </details>
-            </div>
-        </header>
+        {% include 'usuarios/_admin_topbar.html' with admin_title='Ordens de Serviço' %}
 
         <main class="adm-conteudo">
             <section class="adm-intro" aria-labelledby="adm-titulo">
                 <div>
-                    <p class="adm-eyebrow">Visão geral</p>
-                    <h2 id="adm-titulo">Acompanhe suas ordens de serviço</h2>
-                    <p>Indicadores e lista acompanham os filtros selecionados.</p>
+                    <p class="adm-eyebrow">Acompanhamento</p>
+                    <h2 id="adm-titulo">Todas as ordens de serviço</h2>
+                    <p>Consulte e filtre as ordens cadastradas para acompanhar o andamento.</p>
                 </div>
             </section>
 
-            <section class="adm-indicadores" aria-label="Resumo das ordens por status">
-                {% for card in status_cards %}
-                <a href="{{ card.url }}"
-                    class="adm-indicador adm-indicador--{{ card.classe }}{% if card.selecionado %} adm-indicador--ativo{% endif %}"
-                    aria-label="Filtrar por {{ card.rotulo }}: {{ card.quantidade }} ordem(ns)"
-                    {% if card.selecionado %}aria-current="true"{% endif %}>
-                    <span class="adm-indicador-icone" aria-hidden="true">{{ card.icone }}</span>
-                    <span class="adm-indicador-label">{{ card.rotulo }}</span>
-                    <strong>{{ card.quantidade }}</strong>
-                    <span class="adm-indicador-nota">
-                        {% if card.chave == 'aberta' %}Aguardando início do serviço
-                        {% elif card.chave == 'execucao' %}Serviços em andamento
-                        {% elif card.chave == 'analise' %}Aguardando conferência
-                        {% else %}Ordens finalizadas{% endif %}
-                    </span>
-                </a>
-                {% endfor %}
-            </section>
-
-            <section class="adm-graficos" aria-label="Gráficos do painel">
-                <article class="adm-cartao-grafico">
-                    <div class="adm-grafico-cabecalho">
-                        <div>
-                            <h3>Ordens criadas</h3>
-                            <p>Selecione um dia para filtrar o painel</p>
-                        </div>
-                        <span class="adm-grafico-total">{{ total_semana }} <small>na semana</small></span>
-                    </div>
-                    <div class="adm-grafico-barras" aria-label="Ordens criadas por dia nos últimos sete dias">
-                        {% for dia in dias_semana %}
-                        <a href="{{ dia.url }}"
-                            class="adm-barra-coluna{% if dia.selecionado %} adm-barra-coluna--ativa{% endif %}"
-                            title="{{ dia.data }}: {{ dia.quantidade }} ordem(ns)"
-                            aria-label="Filtrar {{ dia.data }}: {{ dia.quantidade }} ordem(ns)">
-                            <span class="adm-barra-valor">{{ dia.quantidade }}</span>
-                            <div class="adm-barra-trilho">
-                                <span class="adm-barra" style="height: {{ dia.percentual }}%"></span>
-                            </div>
-                            <span class="adm-barra-dia">{{ dia.semana }}</span>
-                            <span class="adm-barra-data">{{ dia.data }}</span>
-                        </a>
-                        {% endfor %}
-                    </div>
-                </article>
-
-                <article class="adm-cartao-grafico adm-cartao-distribuicao">
-                    <div class="adm-grafico-cabecalho">
-                        <div>
-                            <h3>Distribuição por status</h3>
-                            <p>Distribuição na seleção atual</p>
-                        </div>
-                    </div>
-                    <div class="adm-distribuicao">
-                        <div class="adm-anel{% if not metricas.total %} adm-anel--vazio{% endif %}"
-                            style="background: conic-gradient(var(--azul-marinho) 0% {{ status_chart.aberta_fim }}%, var(--verde-lima) {{ status_chart.aberta_fim }}% {{ status_chart.execucao_fim }}%, #e8b84a {{ status_chart.execucao_fim }}% {{ status_chart.analise_fim }}%, #b7c8d4 {{ status_chart.analise_fim }}% 100%)"
-                            role="img" aria-label="Distribuição das ordens por status">
-                            <span>{{ metricas.total }}<small>ordens</small></span>
-                        </div>
-                        <ul class="adm-legenda-grafico">
-                            <li><span class="adm-legenda-ponto adm-legenda-ponto--aberta"></span>
-                                Aberta <strong>{{ metricas.aberta }}</strong></li>
-                            <li><span class="adm-legenda-ponto adm-legenda-ponto--execucao"></span>
-                                Em execução <strong>{{ metricas.execucao }}</strong></li>
-                            <li><span class="adm-legenda-ponto adm-legenda-ponto--analise"></span>
-                                Em análise <strong>{{ metricas.analise }}</strong></li>
-                            <li><span class="adm-legenda-ponto adm-legenda-ponto--concluida"></span>
-                                Concluída <strong>{{ metricas.concluida }}</strong></li>
-                        </ul>
-                    </div>
-                </article>
-            </section>
-
-            <!-- Busca e filtros -->
-            <form method="GET" class="adm-filtros" role="search" aria-label="Filtrar ordens de serviço">
+            <!-- Busca e filtros (HTMX: filtra a lista sem recarregar a página) -->
+            <form method="GET" class="adm-filtros" role="search" aria-label="Filtrar ordens de serviço"
+                hx-get="{% url 'ordens:listar_admin' %}"
+                hx-target="#adm-resultados"
+                hx-swap="innerHTML"
+                hx-trigger="keyup changed delay:300ms, change, submit">
                 {% if filtro.dia %}<input type="hidden" name="dia" value="{{ filtro.dia }}">{% endif %}
                 <label class="sr-only" for="adm-busca">Buscar ordens</label>
                 <input type="search" name="q" value="{{ filtro.q }}"
                     placeholder="Buscar por descrição, endereço ou número da O.S." class="adm-busca"
                     id="adm-busca">
                 <label class="sr-only" for="adm-status">Filtrar por status</label>
-                <select name="status" class="adm-select" id="adm-status" onchange="this.form.submit()">
+                <select name="status" class="adm-select" id="adm-status">
                     <option value="">Todos os status</option>
                     {% for valor, rotulo in status_opcoes %}
                     <option value="{{ valor }}" {% if filtro.status == valor %}selected{% endif %}>{{ rotulo }}</option>
                     {% endfor %}
                 </select>
                 <label class="sr-only" for="adm-prioridade">Filtrar por prioridade</label>
-                <select name="prioridade" class="adm-select" id="adm-prioridade"
-                    onchange="this.form.submit()">
+                <select name="prioridade" class="adm-select" id="adm-prioridade">
                     <option value="">Todas as prioridades</option>
                     {% for valor, rotulo in prioridade_opcoes %}
                     <option value="{{ valor }}" {% if filtro.prioridade == valor %}selected{% endif %}>{{ rotulo }}</option>
                     {% endfor %}
                 </select>
                 <label class="sr-only" for="adm-prestador">Filtrar por prestador</label>
-                <select name="prestador" class="adm-select" id="adm-prestador" onchange="this.form.submit()">
+                <select name="prestador" class="adm-select" id="adm-prestador">
                     <option value="">Todos os prestadores</option>
                     {% for p in prestadores %}
                     <option value="{{ p.id }}" {% if filtro.prestador == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
@@ -203,123 +65,9 @@
                 {% endif %}
             </form>
 
-            <!-- Tabela -->
-            <div class="adm-tabela-cabecalho">
-                <div>
-                    <h2>Ordens cadastradas</h2>
-                    <p>Resultados correspondentes à busca e aos filtros.</p>
-                </div>
-                <span class="adm-contagem">{{ total }} ordem{{ total|pluralize:",ns" }}</span>
-            </div>
-            <p class="sr-only" id="adm-dica-tabela">Em telas pequenas, deslize horizontalmente para consultar todas as colunas.</p>
-            <div class="adm-tabela-wrap">
-                <table class="adm-tabela" aria-describedby="adm-dica-tabela">
-                    <thead>
-                        <tr>
-                            <th scope="col">Nº</th>
-                            <th scope="col">Criada em</th>
-                            <th scope="col">Descrição</th>
-                            <th scope="col">Categoria</th>
-                            <th scope="col">Prioridade</th>
-                            <th scope="col">Endereço</th>
-                            <th scope="col">Prestador</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ordem in page_obj %}
-                        <tr>
-                            <td class="adm-numero" data-label="Nº">
-                                <a href="{{ ordem.detalhe_admin_url }}" class="adm-link-ordem"
-                                    aria-label="Abrir detalhes da O.S. {{ ordem.numero_OS }}">{{ ordem.numero_OS }}</a>
-                            </td>
-                            <td class="adm-data" data-label="Criada em">{{ ordem.criada_em|date:"d/m/Y H:i" }}</td>
-                            <td class="adm-descricao" data-label="Descrição">
-                                <a href="{{ ordem.detalhe_admin_url }}" class="adm-link-ordem">
-                                    {{ ordem.descricao|truncatechars:60 }}
-                                </a>
-                            </td>
-                            <td class="adm-categoria" data-label="Categoria">{{ ordem.categoria_curta }}</td>
-                            <td>
-                                {% if ordem.prioridade == 'URGENTE' %}
-                                <span class="adm-badge adm-badge--urgente"><span aria-hidden="true">▲▲</span> Urgente</span>
-                                {% elif ordem.prioridade == 'ALTA' %}
-                                <span class="adm-badge adm-badge--alta"><span aria-hidden="true">▲</span> Alta</span>
-                                {% elif ordem.prioridade == 'BAIXA' %}
-                                <span class="adm-badge adm-badge--baixa"><span aria-hidden="true">▼</span> Baixa</span>
-                                {% else %}
-                                <span class="adm-badge adm-badge--normal"><span aria-hidden="true">●</span> Normal</span>
-                                {% endif %}
-                            </td>
-                            <td class="adm-endereco" data-label="Endereço">{{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}</td>
-                            <td class="adm-prestador" data-label="Prestador">{{ ordem.prestador_curto }}</td>
-                            <td>
-                                {% if ordem.status == 'ABERTA' %}
-                                <span class="adm-badge adm-badge--aberta"><span aria-hidden="true">◯</span> Aberta</span>
-                                {% elif ordem.status == 'EM EXECUÇÃO' %}
-                                <span class="adm-badge adm-badge--execucao"><span aria-hidden="true">▶</span> Em execução</span>
-                                {% elif ordem.status == 'EM ANÁLISE' %}
-                                <span class="adm-badge adm-badge--analise"><span aria-hidden="true">◉</span> Em análise</span>
-                                {% else %}
-                                <span class="adm-badge adm-badge--concluida"><span aria-hidden="true">✓</span> Concluída</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="adm-acoes">
-                                <a href="{% url 'ordens:editar' ordem.pk %}" class="adm-btn-abrir">Editar</a>
-                                {% if ordem.status == 'EM ANÁLISE' %}
-                                <a href="{{ ordem.detalhe_admin_url }}" class="adm-btn-abrir adm-btn-analisar">Analisar</a>
-                                {% else %}
-                                <a href="{{ ordem.detalhe_admin_url }}" class="adm-btn-abrir">Acompanhar</a>
-                                {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="adm-vazio">
-                                <span class="adm-vazio-icone" aria-hidden="true">⌕</span>
-                                <strong>Nenhuma ordem encontrada</strong>
-                                <span>Experimente ajustar a busca ou remover alguns filtros.</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Paginação -->
-            <div class="adm-paginacao">
-                <span class="adm-paginacao-info">
-                    {% if total %}Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ total }} ordens{% else %}Nenhuma ordem para exibir{% endif %}
-                </span>
-                {% if is_paginated %}
-                <nav class="adm-paginas" aria-label="Paginação">
-                    {% if page_obj.has_previous %}
-                    <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.previous_page_number }}"
-                        class="adm-pagina-link">‹ Anterior</a>
-                    {% else %}
-                    <span class="adm-pagina-link adm-pagina-link--desabilitada">‹ Anterior</span>
-                    {% endif %}
-
-                    {% for num in paginator.page_range %}
-                    {% if num == page_obj.number %}
-                    <span class="adm-pagina-link adm-pagina-link--ativa">{{ num }}</span>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <a
-                        href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ num }}" class="adm-pagina-link">
-                        {{ num }}</a>
-                        {% endif %}
-                        {% endfor %}
-
-                        {% if page_obj.has_next %}
-                        <a href="?{% if query_base %}{{ query_base }}&{% endif %}pagina={{ page_obj.next_page_number }}"
-                            class="adm-pagina-link">Próxima ›</a>
-                        {% else %}
-                        <span class="adm-pagina-link adm-pagina-link--desabilitada">Próxima ›</span>
-                        {% endif %}
-                </nav>
-                {% endif %}
+            <!-- Resultados parciais atualizados pelo HTMX -->
+            <div id="adm-resultados">
+                {% include 'ordens/_admin_resultados.html' %}
             </div>
         </main>
     </div>

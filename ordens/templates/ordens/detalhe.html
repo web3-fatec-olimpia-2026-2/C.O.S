@@ -32,6 +32,24 @@
         .cos-meta-item .cos-lbl { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--azul-acinzentado); font-weight: 700; margin-bottom: .2rem; }
         .cos-meta-item .cos-val { font-size: .92rem; font-weight: 600; color: var(--texto); }
 
+        .cos-timeline { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); }
+        .cos-timeline-cabecalho { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+        .cos-timeline-cabecalho h2 { color: var(--azul-marinho); font-size: 1.05rem; }
+        .cos-timeline-cabecalho p { color: var(--azul-acinzentado); font-size: .82rem; margin-top: .2rem; }
+        .cos-timeline-lista { list-style: none; }
+        .cos-timeline-etapa { position: relative; display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: .9rem; min-height: 4.2rem; padding-bottom: 1rem; }
+        .cos-timeline-etapa:not(:last-child)::before { position: absolute; top: 2rem; bottom: 0; left: .92rem; width: 2px; background: #dce4e8; content: ""; }
+        .cos-timeline-etapa--concluida:not(:last-child)::before { background: var(--verde-lima); }
+        .cos-timeline-marcador { position: relative; z-index: 1; display: grid; width: 2rem; height: 2rem; place-items: center; border: 2px solid #d5dfe4; border-radius: 50%; background: #f5f7f8; color: #71838d; font-size: .75rem; font-weight: 800; }
+        .cos-timeline-etapa--concluida .cos-timeline-marcador { border-color: var(--verde-lima); background: var(--verde-lima); color: var(--azul-marinho); }
+        .cos-timeline-etapa--atual .cos-timeline-marcador { border-color: var(--azul-marinho); background: var(--branco); color: var(--azul-marinho); box-shadow: 0 0 0 4px rgba(10,48,81,.1); }
+        .cos-timeline-conteudo { padding: .1rem 0 .45rem; }
+        .cos-timeline-conteudo h3 { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; color: #637783; font-size: .88rem; font-weight: 650; }
+        .cos-timeline-etapa--concluida .cos-timeline-conteudo h3,
+        .cos-timeline-etapa--atual .cos-timeline-conteudo h3 { color: var(--azul-marinho); }
+        .cos-timeline-conteudo p { margin-top: .2rem; color: var(--azul-acinzentado); font-size: .78rem; line-height: 1.45; }
+        .cos-timeline-atual { padding: .12rem .5rem; border-radius: 999px; background: #e8f1f8; color: var(--azul-marinho); font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+
         .cos-banner { border-radius: 12px; padding: .9rem 1.1rem; margin-bottom: 1.25rem; font-size: .92rem; font-weight: 600; display: flex; gap: .6rem; align-items: flex-start; }
         .cos-banner--info { background: #e3eef7; color: #0A3051; border: 1px solid #bcd3e6; }
         .cos-banner--ok { background: #e7f5dc; color: #2f5d17; border: 1px solid #c9e8b0; }
@@ -55,6 +73,17 @@
         .cos-vazio { grid-column: 1 / -1; border: 2px dashed var(--borda); border-radius: 10px; padding: 1.4rem .8rem; text-align: center; color: var(--azul-acinzentado); font-size: .82rem; font-weight: 600; }
 
         .cos-upload { background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: 1.2rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); }
+
+        /* Ações condicionais do prestador (iniciar / finalizar serviço) */
+        .cos-acoes-servico { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; background: var(--branco); border: 1px solid var(--borda); border-radius: 16px; padding: .9rem 1.2rem; margin-bottom: 1.25rem; box-shadow: 0 2px 10px rgba(10,48,81,.05); }
+        .cos-acoes-servico form { margin: 0; }
+        .cos-acoes-ajuda { font-size: .82rem; color: var(--azul-acinzentado); margin: 0; line-height: 1.4; }
+        .cos-acoes-ajuda--alerta { color: #991b1b; font-weight: 600; }
+
+        /* Relatório PDF */
+        .cos-relatorio-acoes { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+        a.cos-btn--pdf { text-decoration: none; display: inline-flex; align-items: center; gap: .5rem; }
+        a.cos-btn--pdf:hover { filter: brightness(.97); }
         .cos-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
         .cos-dropzone { display: block; border: 2px dashed var(--verde-lima); background: #f4faea; border-radius: 12px; padding: 1.3rem 1rem; text-align: center; cursor: pointer; transition: background .15s; margin-bottom: .7rem; }
         .cos-dropzone:hover { background: #e9f7d8; }
@@ -91,6 +120,8 @@
             .cos-meta { grid-template-columns: 1fr 1fr; }
             .cos-fotos-grid, .cos-upload-grid, .cos-decisao-grid { grid-template-columns: 1fr; }
             .cos-status-pill { margin-left: 0; }
+            .cos-timeline { padding: 1rem; }
+            .cos-timeline-cabecalho { flex-direction: column; }
         }
     </style>
 </head>
@@ -139,6 +170,37 @@
                     <div class="cos-meta-item"><span class="cos-lbl">Prestador</span><span class="cos-val">{{ ordem.prestador.nome|default:"Não atribuído" }}</span></div>
                 </div>
             </section>
+
+            <section class="cos-timeline" aria-labelledby="titulo-linha-tempo">
+                <div class="cos-timeline-cabecalho">
+                    <div>
+                        <h2 id="titulo-linha-tempo">Acompanhamento da ordem</h2>
+                        <p>Etapas do atendimento e registros disponíveis.</p>
+                    </div>
+                    <span class="cos-status-pill {% if ordem.status == 'ABERTA' %}cos-status--aberta{% elif ordem.status == 'EM EXECUÇÃO' %}cos-status--execucao{% elif ordem.status == 'EM ANÁLISE' %}cos-status--analise{% else %}cos-status--concluida{% endif %}">
+                        {{ ordem.get_status_display }}
+                    </span>
+                </div>
+                <ol class="cos-timeline-lista">
+                    {% for etapa in timeline_steps %}
+                    <li class="cos-timeline-etapa{% if etapa.concluida %} cos-timeline-etapa--concluida{% elif etapa.atual %} cos-timeline-etapa--atual{% endif %}">
+                        <span class="cos-timeline-marcador" aria-hidden="true">{% if etapa.concluida %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
+                        <div class="cos-timeline-conteudo">
+                            <h3>
+                                {{ etapa.titulo }}
+                                {% if etapa.atual %}<span class="cos-timeline-atual">Etapa atual</span>{% endif %}
+                            </h3>
+                            <p>{{ etapa.descricao }}</p>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </section>
+
+            <!-- Acesso ao relatório PDF -->
+            <div class="cos-relatorio-acoes">
+                <a class="cos-btn cos-btn--primario cos-btn--pdf" href="{% url 'ordens:pdf' ordem.pk %}" target="_blank" rel="noopener">🖨 Relatório em PDF (imprimir)</a>
+            </div>
 
             <!-- Banners de status -->
             {% if ordem.status == 'EM ANÁLISE' %}
@@ -197,6 +259,32 @@
                     </div>
                 </section>
             </div>
+
+            <!-- Ações condicionais do prestador: iniciar serviço (ABERTA) -->
+            {% if pode_iniciar %}
+            <section class="cos-acoes-servico">
+                <form action="{% url 'ordens:iniciar_servico' ordem.pk %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="cos-btn cos-btn--primario">▶ Iniciar serviço</button>
+                </form>
+                <p class="cos-acoes-ajuda">Ao iniciar, a O.S. muda para “Em execução” e libera o registro das fotos ANTES e DEPOIS.</p>
+            </section>
+            {% endif %}
+
+            <!-- Ações condicionais do prestador: finalizar serviço (EM EXECUÇÃO) -->
+            {% if pode_finalizar %}
+            <section class="cos-acoes-servico">
+                <form action="{% url 'ordens:finalizar_servico' ordem.pk %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="cos-btn cos-btn--verde">Finalizar e enviar para análise</button>
+                </form>
+                {% if not qtd_antes or not qtd_depois %}
+                <p class="cos-acoes-ajuda cos-acoes-ajuda--alerta">Falta {{ qtd_antes|pluralize:"foto,fotos" }} ANTES ou DEPOIS: a administração exige pelo menos um registro de cada tipo.</p>
+                {% else %}
+                <p class="cos-acoes-ajuda">Com as fotos ANTES e DEPOIS registradas, a O.S. segue para conferência da administração.</p>
+                {% endif %}
+            </section>
+            {% endif %}
 
             <!-- Envio de fotos (prestador) -->
             {% if pode_enviar_fotos %}

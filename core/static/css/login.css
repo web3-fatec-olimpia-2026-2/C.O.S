@@ -386,6 +386,41 @@ body.pagina-login {
   }
 }
 
+/* Link de cadastro (login e cadastro) */
+.cadastro-rodape {
+  margin-top: 1.2rem;
+  text-align: center;
+  color: #526f7e;
+  font-size: 0.92rem;
+}
+
+.cadastro-rodape a {
+  color: var(--login-navy);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.cadastro-rodape a:hover {
+  color: #35651b;
+}
+
+.erro-campo {
+  color: var(--login-error);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .cadastro-rodape {
+    margin-top: 1.6rem;
+    font-size: 1.15rem;
+  }
+
+  .erro-campo {
+    font-size: 1rem;
+  }
+}
+
 
 /* Cadastro público */
 .mensagem-sucesso {

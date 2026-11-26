@@ -1,0 +1,35 @@
+{% load static %}
+<header class="adm-topbar">
+    <div class="adm-topbar-titulo">
+        <img src="{% static 'logo.png' %}" alt="" class="adm-mobile-logo">
+        <div>
+            <p class="adm-contexto">Painel administrativo</p>
+            <h1>{{ admin_title }}</h1>
+            <a href="{% url 'pagina_inicial' %}" class="adm-mobile-voltar">← Visão geral</a>
+        </div>
+    </div>
+    <div class="adm-topbar-dir">
+        <details class="conta-dropdown">
+            <summary class="identificacao-usuario" aria-label="Abrir opções da conta">
+                <span class="avatar-usuario" aria-hidden="true">
+                    {% if usuario.first_name %}
+                    {{ usuario.first_name|slice:":1"|upper }}{% if usuario.last_name %}{{ usuario.last_name|slice:":1"|upper }}{% endif %}
+                    {% else %}
+                    {{ usuario.username|slice:":1"|upper }}
+                    {% endif %}
+                </span>
+                <span class="usuario-dados">
+                    <span class="usuario-nome">{{ usuario.get_full_name|default:usuario.username }}</span>
+                    <span class="usuario-perfil">{{ usuario.get_perfil_display }}</span>
+                </span>
+                <span class="seta-conta" aria-hidden="true">▾</span>
+            </summary>
+            <div class="menu-conta">
+                <form action="{% url 'logout' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="item-menu-conta item-menu-sair">Sair</button>
+                </form>
+            </div>
+        </details>
+    </div>
+</header>

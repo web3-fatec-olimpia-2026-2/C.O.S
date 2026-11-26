@@ -113,8 +113,7 @@
                             <td data-label="Status">
                                 <span class="status-tabela">{{ ordem.get_status_display }}</span>
                                 {% if ordem.entregue_em %}
-                                <small class="data-entrega-status">Entregue em {{ ordem.entregue_em|date:"d/m/Y H:i"
-                                    }}</small>
+                                <small class="data-entrega-status">Entregue em {{ ordem.entregue_em|date:"d/m/Y H:i" }}</small>
                                 {% endif %}
                             </td>
                             <td class="acoes-tabela" data-label="Ações">

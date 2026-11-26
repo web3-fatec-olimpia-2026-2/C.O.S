@@ -8,6 +8,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 
@@ -600,15 +601,19 @@ def aprovar_os(request, pk):
     if request.user.perfil != 'ADMINISTRADOR':
         raise PermissionDenied('Acesso restrito a administradores.')
 
-    ordem = get_object_or_404(OrdemServico, pk=pk)
+    with transaction.atomic():
+        ordem = get_object_or_404(
+            OrdemServico.objects.select_for_update(),
+            pk=pk,
+        )
 
-    if ordem.status != OrdemServico.Status.EM_ANALISE:
-        messages.error(request, 'Esta O.S. não está em análise para ser aprovada.')
-        return redirect('ordens:detalhe', pk=ordem.pk)
+        if ordem.status != OrdemServico.Status.EM_ANALISE:
+            messages.error(request, 'Esta O.S. não está em análise para ser aprovada.')
+            return redirect('ordens:detalhe', pk=ordem.pk)
 
-    ordem.status = OrdemServico.Status.CONCLUIDA
-    ordem.motivo_reprovacao = ''
-    ordem.save()
+        ordem.status = OrdemServico.Status.CONCLUIDA
+        ordem.motivo_reprovacao = ''
+        ordem.save(update_fields=['status', 'motivo_reprovacao'])
     messages.success(request, f'O.S. {ordem.numero_OS} aprovada e concluída com sucesso.')
     return redirect('ordens:detalhe', pk=ordem.pk)
 

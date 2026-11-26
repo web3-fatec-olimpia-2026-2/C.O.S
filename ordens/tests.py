@@ -25,6 +25,38 @@ class OrdemServicoTests(TestCase):
         )
         self.client.force_login(self.user)
 
+    def test_administrador_aprova_ordem_em_analise(self):
+        inicio = timezone.now()
+        ordem = OrdemServico.objects.create(
+            data_prevista=timezone.localdate(),
+            descricao='Ordem aguardando aprovação',
+            endereco='Rua das Flores',
+            numero_endereco='100',
+            bairro='Centro',
+            status=OrdemServico.Status.EM_ANALISE,
+            motivo_reprovacao='',
+        )
+
+        response = self.client.post(
+            reverse('ordens:aprovar', args=[ordem.pk])
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('ordens:detalhe', args=[ordem.pk]),
+        )
+        ordem.refresh_from_db()
+        self.assertEqual(ordem.status, OrdemServico.Status.CONCLUIDA)
+        self.assertEqual(ordem.motivo_reprovacao, '')
+        self.assertIsNotNone(ordem.entregue_em)
+        self.assertGreaterEqual(ordem.entregue_em, inicio)
+        self.assertLessEqual(ordem.entregue_em, timezone.now())
+
+        pagina_inicial = self.client.get(reverse('pagina_inicial'))
+        self.assertEqual(pagina_inicial.status_code, 200)
+        self.assertContains(pagina_inicial, 'Entregue em')
+        self.assertNotContains(pagina_inicial, '{{ ordem.entregue_em')
+
     def test_criar_ordem_exibe_template_de_formulario(self):
         response = self.client.get(reverse('ordens:criar'))
 

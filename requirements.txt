@@ -57,3 +57,4 @@ pillow
 
 # ---------- Exportacao de PDF ----------
 weasyprint>=70
+reportlab>=4.2

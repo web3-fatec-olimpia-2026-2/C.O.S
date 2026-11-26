@@ -16,7 +16,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import CadastroUsuarioForm
 from ordens.forms import OrdemForm
 from ordens.models import OrdemServico
 from ordens.selectors import ordens_visiveis_para

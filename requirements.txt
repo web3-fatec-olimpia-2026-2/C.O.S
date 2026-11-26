@@ -54,3 +54,6 @@ ruff>=0.5
 # ---------- Utilitários ----------
 python-decouple>=3.8  # Alternativa a django-environ
 pillow
+
+# ---------- Exportacao de PDF ----------
+weasyprint>=70

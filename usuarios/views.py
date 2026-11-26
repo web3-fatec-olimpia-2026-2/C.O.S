@@ -5,22 +5,34 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from django.db.models import Count, Q
 
 from ordens.forms import OrdemForm
+from ordens.models import OrdemServico
 from ordens.selectors import ordens_visiveis_para
 
 # Garante que apenas usuários logados consigam acessar esta página.
+# Assistido por IA (Claude): "métricas agregadas por status na home"
 @login_required
 def pagina_inicial(request):
     """Página que aparece depois de logar"""
-    # Renderiza a tela inicial e envia o usuário autenticado para o template.
+    ordens = ordens_visiveis_para(request.user)
+    metricas = ordens.aggregate(
+        total=Count('pk'),
+        abertas=Count('pk', filter=Q(status=OrdemServico.Status.ABERTA)),
+        em_execucao=Count('pk', filter=Q(status=OrdemServico.Status.EM_EXECUCAO)),
+        em_analise=Count('pk', filter=Q(status=OrdemServico.Status.EM_ANALISE)),
+        concluidas=Count('pk', filter=Q(status=OrdemServico.Status.CONCLUIDA)),
+    )
+    # Renderiza a tela inicial e envia o usuário, a lista e as métricas ao template.
     return render(
         request,
         'usuarios/home.html',
         {
             'usuario': request.user,
             'form': OrdemForm(),
-            'ordens': ordens_visiveis_para(request.user).order_by('-id'),
+            'ordens': ordens.order_by('-id'),
+            'metricas': metricas,
         },
     )
 

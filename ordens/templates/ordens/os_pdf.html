@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 2cm; }
+    body { font-family: sans-serif; font-size: 11pt; color: #222; }
+    h1 { font-size: 18pt; border-bottom: 2px solid #333; padding-bottom: 6px; }
+    h2 { font-size: 13pt; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 5px 0; vertical-align: top; }
+    td.rotulo { width: 28%; font-weight: bold; }
+    .fotos img { width: 48%; max-height: 7cm; margin: 1%; }
+  </style>
+</head>
+<body>
+  <h1>Ordem de Serviço {{ ordem.numero_OS }}</h1>
+  <table>
+    <tr><td class="rotulo">Status</td><td>{{ ordem.get_status_display }}</td></tr>
+    <tr><td class="rotulo">Categoria</td><td>{{ ordem.get_categoria_display }}</td></tr>
+    <tr><td class="rotulo">Prioridade</td><td>{{ ordem.get_prioridade_display }}</td></tr>
+    <tr><td class="rotulo">Prestador</td><td>{{ ordem.prestador|default:"Não atribuído" }}</td></tr>
+    <tr><td class="rotulo">Endereço</td><td>{{ ordem.endereco }}, {{ ordem.numero_endereco }} - {{ ordem.bairro }}</td></tr>
+    <tr><td class="rotulo">Data prevista</td><td>{{ ordem.data_prevista|date:"d/m/Y" }}</td></tr>
+    <tr><td class="rotulo">Criada em</td><td>{{ ordem.criada_em|date:"d/m/Y H:i" }}</td></tr>
+    <tr><td class="rotulo">Entregue em</td><td>{{ ordem.entregue_em|date:"d/m/Y H:i"|default:"-" }}</td></tr>
+    <tr><td class="rotulo">Descrição</td><td>{{ ordem.descricao }}</td></tr>
+  </table>
+
+  <h2>Fotos: Antes</h2>
+  <div class="fotos">
+    {% for foto in fotos_antes %}<img src="{{ foto.imagem.url }}">{% empty %}<p>Sem fotos.</p>{% endfor %}
+  </div>
+
+  <h2>Fotos: Depois</h2>
+  <div class="fotos">
+    {% for foto in fotos_depois %}<img src="{{ foto.imagem.url }}">{% empty %}<p>Sem fotos.</p>{% endfor %}
+  </div>
+</body>
+</html>

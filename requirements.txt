@@ -45,7 +45,7 @@ whitenoise>=6.6  # Servir arquivos estáticos
 pytest>=8.0
 pytest-django>=4.8
 pytest-cov>=5.0
-factory-boy>=3.3  # Fábricas para dados de teste
+factory-boy>=3.3.3  # Fábricas para dados de teste
 faker>=25.0      # Dados fake em português (locale pt_BR)
 
 # ---------- Qualidade de código ----------

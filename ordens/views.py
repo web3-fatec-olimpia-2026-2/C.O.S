@@ -18,8 +18,8 @@ from .selectors import ordens_visiveis_para
 
 
 def _verificar_acesso_ordens(request):
-    if request.user.perfil == 'PRESTADOR':
-        raise PermissionDenied('Prestadores não podem alterar ordens de serviço.')
+    if request.user.perfil != 'ADMINISTRADOR':
+        raise PermissionDenied('Acesso restrito a administradores.')
 
 
 def _ordem_visivel_para(request, pk):
@@ -774,17 +774,55 @@ def reprovar_os(request, pk):
 @login_required
 def os_pdf(request, pk):
     """Gera o PDF de uma O.S. Respeita o mesmo filtro de acesso da listagem."""
-    from django.template.loader import render_to_string
-    from weasyprint import HTML
-
     ordem = get_object_or_404(ordens_visiveis_para(request.user), pk=pk)
-    html = render_to_string('ordens/os_pdf.html', {
-        'ordem': ordem,
-        'fotos_antes': ordem.fotos.filter(tipo=FotosOS.Tipo.ANTES),
-        'fotos_depois': ordem.fotos.filter(tipo=FotosOS.Tipo.DEPOIS),
-    }, request=request)
 
-    pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+    try:
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
+
+        html = render_to_string('ordens/os_pdf.html', {
+            'ordem': ordem,
+            'fotos_antes': ordem.fotos.filter(tipo=FotosOS.Tipo.ANTES),
+            'fotos_depois': ordem.fotos.filter(tipo=FotosOS.Tipo.DEPOIS),
+        }, request=request)
+        pdf = HTML(
+            string=html,
+            base_url=request.build_absolute_uri('/'),
+        ).write_pdf()
+    except (ImportError, OSError):
+        from io import BytesIO
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+
+        buffer = BytesIO()
+        pdf_canvas = canvas.Canvas(buffer, pagesize=A4)
+        _, altura = A4
+        y = altura - 50
+
+        pdf_canvas.setTitle(f'Relatório da O.S. {ordem.numero_OS}')
+        pdf_canvas.setFont('Helvetica-Bold', 16)
+        pdf_canvas.drawString(50, y, f'Relatório da O.S. {ordem.numero_OS}')
+        y -= 35
+        pdf_canvas.setFont('Helvetica', 11)
+        linhas = (
+            f'Status: {ordem.get_status_display()}',
+            f'Categoria: {ordem.get_categoria_display()}',
+            f'Prioridade: {ordem.get_prioridade_display()}',
+            f'Data prevista: {ordem.data_prevista.strftime("%d/%m/%Y")}',
+            f'Prestador: {ordem.prestador.nome if ordem.prestador else "Não atribuído"}',
+            f'Endereço: {ordem.endereco}, {ordem.numero_endereco} - {ordem.bairro}',
+            f'Descrição: {ordem.descricao}',
+        )
+        for linha in linhas:
+            if y < 50:
+                pdf_canvas.showPage()
+                y = altura - 50
+                pdf_canvas.setFont('Helvetica', 11)
+            pdf_canvas.drawString(50, y, linha[:115])
+            y -= 22
+
+        pdf_canvas.save()
+        pdf = buffer.getvalue()
     resposta = HttpResponse(pdf, content_type='application/pdf')
     resposta['Content-Disposition'] = f'inline; filename="os_{ordem.numero_OS}.pdf"'
     return resposta

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .models import Prestador, Usuario
 
@@ -23,6 +24,12 @@ class UsuarioCadastroForm(forms.ModelForm):
         model = Usuario
         fields = ('username', 'first_name', 'last_name', 'email')
 
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if Usuario.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('Este nome de usuário já está cadastrado.')
+        return username
+
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()
         if Usuario.objects.filter(email__iexact=email).exists():
@@ -33,12 +40,21 @@ class UsuarioCadastroForm(forms.ModelForm):
         cleaned_data = super().clean()
         senha = cleaned_data.get('senha')
         senha_confirmacao = cleaned_data.get('senha_confirmacao')
-
         if senha and senha_confirmacao and senha != senha_confirmacao:
-            self.add_error('senha_confirmacao', 'As senhas não conferem.')
+            self.add_error('senha_confirmacao', 'As senhas não coincidem.')
         elif senha:
-            validate_password(senha)
-
+            try:
+                validate_password(
+                    senha,
+                    user=Usuario(
+                        username=cleaned_data.get('username', ''),
+                        email=cleaned_data.get('email', ''),
+                        first_name=cleaned_data.get('first_name', ''),
+                        last_name=cleaned_data.get('last_name', ''),
+                    ),
+                )
+            except ValidationError as erro:
+                self.add_error('senha', list(erro))
         return cleaned_data
 
     def save(self, commit=True):

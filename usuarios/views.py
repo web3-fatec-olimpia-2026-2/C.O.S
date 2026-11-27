@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import CadastroUsuarioForm
+from .forms import CadastroUsuarioAdminForm, CadastroUsuarioForm
 from ordens.forms import OrdemForm
 from ordens.models import OrdemServico
 from ordens.selectors import ordens_visiveis_para
@@ -292,8 +292,8 @@ def configuracoes_admin(request):
     _exigir_administrador(request)
     # ⚠️ Atenção: esta função usa AdminUsuarioCadastroForm
     # Se essa classe não existir no forms.py, remova ou ajuste conforme necessário
-    from .forms import CadastroUsuarioForm
-    form = CadastroUsuarioForm(request.POST or None)
+    from .forms import CadastroUsuarioAdminForm
+    form = CadastroUsuarioAdminForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         usuario_criado = form.save()
         messages.success(

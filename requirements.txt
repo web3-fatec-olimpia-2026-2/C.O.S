@@ -58,3 +58,7 @@ pillow
 # ---------- Exportacao de PDF ----------
 weasyprint>=70
 reportlab>=4.2
+
+# ---------- Armazenamento de Mídia em Nuvem ----------
+cloudinary>=1.41
+django-cloudinary-storage>=0.3.0

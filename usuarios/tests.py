@@ -217,19 +217,20 @@ class CadastroUsuarioTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Criar conta')
-        self.assertContains(response, 'name="senha_confirmacao"')
+        self.assertContains(response, 'name="password2"')
+        
 
     def test_cadastro_valido_cria_usuario_comum_e_autentica(self):
         response = self.client.post(
             reverse('cadastro'),
             {
-                'username': 'novousuario',
-                'first_name': 'Novo',
-                'last_name': 'Usuario',
-                'email': 'novousuario@example.com',
-                'senha': 'SenhaForte@123',
-                'senha_confirmacao': 'SenhaForte@123',
-            },
+            'username': 'novousuario',
+            'first_name': 'Novo',
+            'last_name': 'Usuario',
+            'email': 'novousuario@example.com',
+            'password1': 'SenhaForte@123',     
+            'password2': 'SenhaForte@123',
+        }
         )
 
         self.assertRedirects(response, reverse('pagina_inicial'))
@@ -242,11 +243,11 @@ class CadastroUsuarioTests(TestCase):
         response = self.client.post(
             reverse('cadastro'),
             {
-                'username': 'senhadiferente',
-                'email': 'senha.diferente@example.com',
-                'senha': 'SenhaForte@123',
-                'senha_confirmacao': 'OutaSenhaForte@123',
-            },
+            'username': 'senhadiferente',
+            'email': 'senha.diferente@example.com',
+            'password1': 'SenhaForte@123',     
+            'password2': 'OutaSenhaForte@123',
+        },
         )
 
         self.assertEqual(response.status_code, 200)
@@ -266,8 +267,8 @@ class CadastroUsuarioTests(TestCase):
             {
                 'username': 'novooutro',
                 'email': 'repetido@example.com',
-                'senha': 'SenhaForte@123',
-                'senha_confirmacao': 'SenhaForte@123',
+                'password': 'SenhaForte@123',
+                'password2': 'SenhaForte@123',
             },
         )
 
@@ -322,13 +323,18 @@ class AreaAdministrativaTests(TestCase):
                 'last_name': 'Comum',
                 'email': 'novo-comum@example.com',
                 'perfil': 'COMUM',
-                'senha': 'SenhaForte@123',
-                'senha_confirmacao': 'SenhaForte@123',
+                'password': 'SenhaForte@123',
+                'password2': 'SenhaForte@123',
                 'documento': '',
                 'telefone': '',
             },
         )
 
+        self.assertEqual(
+            resposta.status_code, 
+            302, 
+        f"Falha no cadastro. Resposta: {resposta.content.decode()}"
+        )
         usuario = get_user_model().objects.get(username='novo-comum')
         self.assertRedirects(resposta, reverse('usuarios_admin'))
         self.assertTrue(usuario.check_password('SenhaForte@123'))
@@ -344,12 +350,18 @@ class AreaAdministrativaTests(TestCase):
                 'last_name': 'Prestador',
                 'email': 'novo-prestador@example.com',
                 'perfil': 'PRESTADOR',
-                'senha': 'SenhaForte@123',
-                'senha_confirmacao': 'SenhaForte@123',
+                'password': 'SenhaForte@123',
+                'password2': 'SenhaForte@123',
                 'documento': 'DOC-NOVO-PRESTADOR-01',
                 'telefone': '(17) 90000-0000',
             },
         )
+
+        self.assertEqual(
+            resposta.status_code, 
+            302, 
+            f"Falha no cadastro. Resposta: {resposta.content.decode()}"
+    )
 
         usuario = get_user_model().objects.get(username='novo-prestador')
         self.assertRedirects(resposta, reverse('usuarios_admin'))
